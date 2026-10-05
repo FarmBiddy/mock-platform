@@ -2,7 +2,7 @@
 
 import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatCurrency } from "@/lib/format/currency";
-import { compact, hatch, todayLine } from "./chartBits";
+import { compact, hatch, niceTicks, todayLine } from "./chartBits";
 
 const POSITIVE = "#2f7d4f";
 const NEGATIVE = "#c2410c";
@@ -13,6 +13,7 @@ const NEGATIVE = "#c2410c";
  */
 export default function CashChart({ data }) {
   const firstProjected = data.find((d) => d.projected)?.label;
+  const ticks = niceTicks(data.map((d) => d.closing), 4);
 
   return (
     <div className="h-56">
@@ -22,7 +23,7 @@ export default function CashChart({ data }) {
           {hatch("hatch-neg", NEGATIVE)}
           <CartesianGrid vertical={false} stroke="#e7e5e4" />
           <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#78716c" }} />
-          <YAxis tickFormatter={compact} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#78716c" }} width={48} />
+          <YAxis ticks={ticks} domain={[ticks[0], ticks.at(-1)]} tickFormatter={compact} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#78716c" }} width={48} />
           <ReferenceLine y={0} stroke="#a8a29e" />
           {todayLine(firstProjected)}
           <Tooltip

@@ -49,8 +49,8 @@ export default async function FarmFinancialsPage({ searchParams }) {
         {({ months, ytd, currency }) => (
           <>
             <Card
-              title="Income, operating costs & Operating Surplus"
-              subtitle="Monthly, Jan–Dec. Hatched months after “Today” are projected from your budget and market prices."
+              title="Operating Surplus by month"
+              subtitle="Income minus operating costs, Jan–Dec. Hatched months after “Today” are projected from your budget and market prices."
               badge={<Badge>pl.months</Badge>}
             >
               <MonthlyChart

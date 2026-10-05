@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Bar, Cell, ComposedChart, Legend, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { COLORS } from "@/components/ui";
 import { formatCurrency } from "@/lib/format/currency";
-import { compact, hatch, todayLine } from "./chartBits";
+import { compact, hatch, niceTicks, todayLine } from "./chartBits";
 
 const GAIN = "#2f7d4f";
 const LOSS = "#c2410c";
@@ -21,6 +21,7 @@ const VIEWS = [
 export default function MonthlyChart({ data }) {
   const [view, setView] = useState("surplus");
   const firstProjected = data.find((d) => d.projected)?.label;
+  const ticks = niceTicks(data.flatMap((d) => (view === "surplus" ? [d.surplus] : [d.income, d.costs, d.surplus])));
   const fill = (d, color, id) => (d.projected ? `url(#${id})` : color);
 
   return (
@@ -48,7 +49,7 @@ export default function MonthlyChart({ data }) {
             {hatch("hatch-loss", LOSS)}
             <CartesianGrid vertical={false} stroke="#e7e5e4" />
             <XAxis dataKey="label" tickLine={false} axisLine={{ stroke: "#d6d3d1" }} tick={{ fontSize: 12, fill: "#78716c" }} />
-            <YAxis tickFormatter={compact} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#78716c" }} width={48} />
+            <YAxis ticks={ticks} domain={[ticks[0], ticks.at(-1)]} tickFormatter={compact} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#78716c" }} width={48} />
             <ReferenceLine y={0} stroke="#a8a29e" />
             {todayLine(firstProjected)}
             <Tooltip

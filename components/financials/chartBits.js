@@ -1,7 +1,21 @@
 // Called as functions (not components) so Recharts sees plain SVG/Reference elements as direct children.
 import { ReferenceLine } from "recharts";
 
-export const compact = (v) => `€${Math.round(v / 1000)}k`;
+export const compact = (v) => `${v < 0 ? "−" : ""}€${Math.round(Math.abs(v) / 1000)}k`;
+
+/** Round axis ticks (1/2/5 × 10ⁿ steps) covering the values and zero. Axis only — not data. */
+export function niceTicks(values, count = 5) {
+  const lo = Math.min(0, ...values);
+  const hi = Math.max(0, ...values);
+  const raw = (hi - lo) / count || 1;
+  const pow = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 5, 10].map((m) => m * pow).find((s) => s >= raw);
+  const top = Math.max(hi, lo + step);
+  let t = Math.floor(lo / step) * step;
+  const ticks = [t];
+  while (t < top) ticks.push((t += step));
+  return ticks;
+}
 
 /** 45° hatch used for projected months: identity stays readable without relying on opacity alone. */
 export function hatch(id, color) {
