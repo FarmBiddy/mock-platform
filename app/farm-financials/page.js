@@ -4,10 +4,11 @@ import MonthlyChart from "@/components/financials/MonthlyChart";
 import CashChart from "@/components/financials/CashChart";
 import Breakdown, { expenseRows, incomeRows } from "@/components/financials/Breakdown";
 import { EventsCard, LoansCard, Stat, SupplierDebtCard } from "@/components/financials/PlatformCards";
+import StatusTiles from "@/components/financials/StatusTiles";
+import SourcesToggle from "@/components/SourcesToggle";
 import { cfMonths, loanSchedule, plMonths } from "@/lib/financial-engine/client";
 import { buildCfMonthsInput, buildPlMonthsInput, getFarm, isProjected } from "@/lib/financials/farm";
 import { formatCurrency } from "@/lib/format/currency";
-import { formatMarginPct } from "@/lib/format/percent";
 import { monthLabel } from "@/lib/format/date";
 
 export const metadata = { title: "Farm Financials · FarmBiddy" };
@@ -39,27 +40,17 @@ export default async function FarmFinancialsPage({ searchParams }) {
             {farm.profile.farm_name} · {farm.year} · actuals to end of {asOf}, budget after
           </p>
         </div>
-        <Badge>Calculated by Financial Engine</Badge>
+        <SourcesToggle />
       </div>
+
+      <StatusTiles pl={pl} cf={cf} loans={loans} farm={farm} />
 
       <EngineGate response={pl} params={params}>
         {({ months, ytd, currency }) => (
           <>
-            <div className="grid gap-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200/70 sm:grid-cols-2 lg:grid-cols-4">
-              <Stat label={`Income YTD (Jan–${asOf})`} value={formatCurrency(ytd.revenue.total, currency)} />
-              <Stat label="Operating costs YTD" value={formatCurrency(ytd.costs.total, currency)} />
-              <Stat
-                label="Operating Surplus YTD"
-                value={formatCurrency(ytd.profit.net, currency)}
-                danger={ytd.profit.net < 0}
-                hint={`${formatMarginPct(ytd.profit.margin_pct)} margin`}
-              />
-              <Stat label="Loan repayments YTD" value={formatCurrency(ytd.finance.loan_repayments, currency)} hint="Outside Operating Surplus" />
-            </div>
-
             <Card
               title="Income, operating costs & Operating Surplus"
-              subtitle="Monthly, Jan–Dec. Faded bars are projected from your budget and market prices."
+              subtitle="Monthly, Jan–Dec. Hatched months after “Today” are projected from your budget and market prices."
               badge={<Badge>pl.months</Badge>}
             >
               <MonthlyChart

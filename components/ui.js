@@ -8,7 +8,7 @@ const BADGES = {
 
 export function Badge({ tone = "engine", children }) {
   return (
-    <span className={`shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${BADGES[tone]}`}>{children}</span>
+    <span className={`${tone === "soon" ? "" : "source-badge"} shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${BADGES[tone]}`}>{children}</span>
   );
 }
 
