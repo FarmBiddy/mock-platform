@@ -1,6 +1,7 @@
 import { Badge, Card } from "@/components/ui";
 import EngineGate from "@/components/financials/EngineGate";
 import { formatCurrency } from "@/lib/format/currency";
+import { formatMarginPct } from "@/lib/format/percent";
 import { dayLabel, monthLabel } from "@/lib/format/date";
 
 /**
@@ -41,7 +42,7 @@ export function LoansCard({ response, loans, params, describePath }) {
                         <div className="h-1.5 flex-1 rounded-full bg-stone-200">
                           <div className="h-1.5 rounded-full bg-emerald-700" style={{ width: `${l.repaid_pct}%` }} />
                         </div>
-                        {l.repaid_pct}% repaid
+                        {formatMarginPct(l.repaid_pct, 0)} repaid
                       </div>
                     )}
                   </li>

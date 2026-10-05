@@ -19,8 +19,11 @@ export default function StatusTiles({ pl, cf, loans, farm }) {
   const cash = cf.status === "ok" ? cf.result : null;
   const loan = loans.status === "ok" ? loans.result : null;
 
-  const ahead = cash?.months.filter((m) => m.period.month > farm.actual_through_month) ?? [];
-  const lowest = ahead.length ? ahead.reduce((a, b) => (b.closing_cash < a.closing_cash ? b : a)) : null;
+  const minClosing = (ms) => (ms.length ? ms.reduce((a, b) => (b.closing_cash < a.closing_cash ? b : a)) : null);
+  const lowest = minClosing(cash?.months.filter((m) => m.period.month > farm.actual_through_month) ?? []);
+  // An overdraft earlier this year (e.g. spring calving) usually comes back next year — say so.
+  const pastLow = minClosing(cash?.months.filter((m) => m.period.month <= farm.actual_through_month) ?? []);
+  const wasOverdrawn = pastLow?.closing_cash < 0;
 
   const tiles = [
     ytd
@@ -29,19 +32,23 @@ export default function StatusTiles({ pl, cf, loans, farm }) {
           tone: ytd.profit.net > 0 ? "good" : "bad",
           answer: ytd.profit.net > 0 ? "Yes, this year so far" : "Not yet this year",
           value: formatCurrency(ytd.profit.net, ytd.currency),
-          detail: `Operating Surplus Jan–${asOf} · ${formatMarginPct(ytd.profit.margin_pct)} margin`,
+          detail: `Operating Surplus Jan–${asOf} · ${formatMarginPct(ytd.profit.margin_pct, 0)} margin`,
         }
       : { question: "Am I profitable?", tone: "none", answer: "Needs your figures", detail: "See below" },
     lowest
       ? {
           question: "Will I have cash?",
-          tone: lowest.closing_cash < 0 ? "bad" : "good",
+          tone: lowest.closing_cash < 0 ? "bad" : wasOverdrawn ? "warn" : "good",
           answer:
             lowest.closing_cash < 0
               ? `Overdrawn in ${monthLabel(lowest.period.month)}`
               : "Yes, through December",
           value: formatCurrency(cash.closing_cash, cash.currency),
           detail: `Projected 31 Dec · lowest ahead ${formatCurrency(lowest.closing_cash, cash.currency)} in ${monthLabel(lowest.period.month)}`,
+          note:
+            lowest.closing_cash >= 0 && wasOverdrawn
+              ? `You were overdrawn in ${monthLabel(pastLow.period.month)} (${formatCurrency(pastLow.closing_cash, cash.currency)}) — plan for next spring.`
+              : null,
         }
       : { question: "Will I have cash?", tone: "none", answer: "Needs your figures", detail: "See cash flow below" },
     loan && ytd
@@ -70,6 +77,7 @@ export default function StatusTiles({ pl, cf, loans, farm }) {
             </p>
             {t.value && <p className="mt-3 text-2xl font-semibold tabular-nums">{t.value}</p>}
             <p className="mt-1 text-xs text-stone-500">{t.detail}</p>
+            {t.note && <p className="mt-2 text-xs font-medium text-amber-800">{t.note}</p>}
           </section>
         );
       })}
