@@ -63,19 +63,19 @@ export default function StatusTiles({ pl, cf, loans, farm }) {
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
       {tiles.map((t) => {
         const tone = TONES[t.tone];
         return (
-          <section key={t.question} className={`rounded-2xl bg-white p-5 shadow-sm ring-1 ${tone.ring}`}>
+          <section key={t.question} className={`rounded-2xl bg-white p-4 shadow-sm ring-1 sm:p-5 ${tone.ring}`}>
             <p className="text-sm text-stone-500">{t.question}</p>
-            <p className="mt-2 flex items-center gap-2 font-semibold">
+            <p className="mt-1 flex items-center gap-2 font-semibold sm:mt-2">
               <span aria-hidden className={`grid h-6 w-6 place-items-center rounded-full text-xs ${tone.chip}`}>
                 {tone.icon}
               </span>
               {t.answer}
             </p>
-            {t.value && <p className="mt-3 text-2xl font-semibold tabular-nums">{t.value}</p>}
+            {t.value && <p className="mt-2 text-xl font-semibold tabular-nums sm:mt-3 sm:text-2xl">{t.value}</p>}
             <p className="mt-1 text-xs text-stone-500">{t.detail}</p>
             {t.note && <p className="mt-2 text-xs font-medium text-amber-800">{t.note}</p>}
           </section>

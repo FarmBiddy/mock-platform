@@ -3,7 +3,7 @@ export default function Loading() {
   const box = "rounded-2xl bg-white shadow-sm ring-1 ring-stone-200/70 animate-pulse";
 
   return (
-    <div className="space-y-6 p-6" aria-busy="true" aria-label="Loading farm financials">
+    <div className="space-y-6 p-4 sm:p-6" aria-busy="true" aria-label="Loading farm financials">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Farm Financials</h1>
         <p className="text-sm text-stone-500">Biddy is crunching your numbers…</p>

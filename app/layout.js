@@ -1,5 +1,6 @@
 import { DM_Sans } from "next/font/google";
 import Sidebar from "@/components/shell/Sidebar";
+import MobileNav from "@/components/shell/MobileNav";
 import { getFarm } from "@/lib/financials/farm";
 import "./globals.css";
 
@@ -18,8 +19,9 @@ export default function RootLayout({ children }) {
       <body className="flex min-h-full bg-[#eef1ec] font-[family-name:var(--font-sans)] text-stone-900">
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex items-center gap-4 border-b border-stone-200 bg-white px-6 py-3">
-            <label className="flex flex-1 items-center gap-2 rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm">
+          <header className="flex items-center gap-3 border-b border-stone-200 bg-white px-4 py-3 sm:gap-4 sm:px-6">
+            <span className="text-lg font-semibold tracking-tight text-[#173a2b] lg:hidden">FarmBiddy</span>
+            <label className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm">
               <span aria-hidden className="text-emerald-700">✦</span>
               <input
                 className="w-full bg-transparent outline-none placeholder:text-stone-400"
@@ -43,8 +45,9 @@ export default function RootLayout({ children }) {
               </div>
             </div>
           </header>
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 pb-20 lg:pb-0">{children}</main>
         </div>
+        <MobileNav />
       </body>
     </html>
   );
