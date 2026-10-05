@@ -1,4 +1,4 @@
-import { labelForRevenue } from "@/lib/financial-engine/mapResult";
+import { labelForCost, labelForRevenue } from "@/lib/financial-engine/mapResult";
 import { formatCurrency } from "@/lib/format/currency";
 import { COLORS } from "@/components/ui";
 
@@ -22,13 +22,14 @@ export function incomeRows(revenue) {
     .map(([key, amount]) => ({ label: labelForRevenue(key), amount }));
 }
 
-/** Expense rows: engine cost lines grouped for display; unknown lines land in "Other". */
+/** Expense rows: engine cost lines grouped for display (each keeps its lines); unknown lines land in "Other". */
 export function expenseRows(lines) {
   const grouped = new Set(EXPENSE_GROUPS.flatMap(([, keys]) => keys));
   const rest = Object.keys(lines).filter((k) => !grouped.has(k));
   return [...EXPENSE_GROUPS, ["Other", rest]].map(([label, keys]) => ({
     label,
     amount: keys.reduce((sum, k) => sum + (lines[k] ?? 0), 0),
+    lines: keys.map((k) => ({ label: labelForCost(k), amount: lines[k] ?? 0 })).filter((l) => l.amount > 0),
   }));
 }
 
@@ -40,17 +41,42 @@ export default function Breakdown({ rows, total, color = COLORS.income, currency
     <div>
       <p className="text-2xl font-semibold tabular-nums">{formatCurrency(total, currency)}</p>
       <ul className="mt-4 space-y-3">
-        {visible.map((r) => (
-          <li key={r.label} className="text-sm">
-            <div className="flex justify-between gap-3">
-              <span className="text-stone-700">{r.label}</span>
-              <span className="tabular-nums font-medium">{formatCurrency(r.amount, currency)}</span>
-            </div>
-            <div className="mt-1 h-2 rounded-full bg-stone-100">
-              <div className="h-2 rounded-full" style={{ width: `${(r.amount / total) * 100}%`, background: color }} />
-            </div>
-          </li>
-        ))}
+        {visible.map((r) => {
+          const head = (
+            <>
+              <div className="flex justify-between gap-3">
+                <span className="text-stone-700">
+                  {r.label}
+                  {r.lines?.length > 1 && <span aria-hidden className="ml-1 text-xs text-stone-400 group-open:hidden">▸</span>}
+                  {r.lines?.length > 1 && <span aria-hidden className="ml-1 hidden text-xs text-stone-400 group-open:inline">▾</span>}
+                </span>
+                <span className="tabular-nums font-medium">{formatCurrency(r.amount, currency)}</span>
+              </div>
+              <div className="mt-1 h-2 rounded-full bg-stone-100">
+                <div className="h-2 rounded-full" style={{ width: `${(r.amount / total) * 100}%`, background: color }} />
+              </div>
+            </>
+          );
+          return (
+            <li key={r.label} className="text-sm">
+              {r.lines?.length > 1 ? (
+                <details className="group">
+                  <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">{head}</summary>
+                  <ul className="mt-2 space-y-1 border-l-2 border-stone-100 pl-3 text-xs text-stone-500">
+                    {r.lines.map((l) => (
+                      <li key={l.label} className="flex justify-between gap-3">
+                        <span>{l.label}</span>
+                        <span className="tabular-nums">{formatCurrency(l.amount, currency)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : (
+                head
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
