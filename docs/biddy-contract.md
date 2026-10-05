@@ -1,7 +1,8 @@
 # Biddy ⇄ Platform contract (proposal)
 
 **Status:** draft, decisions below agreed on the platform side (Oct 2026). Biddy is still in development, so endpoint
-and auth are TBD. Nothing is implemented yet.
+and auth are TBD. The platform side is implemented against a **mock agent** (`lib/biddy.js`, `data/biddy/fixtures.json`):
+set `BIDDY_URL` to switch to the real Biddy.
 **Goal:** test the platform → Biddy round-trip the same way we test the Financial Engine: one client, JSON fixtures,
 a typed response with three statuses.
 

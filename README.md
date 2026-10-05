@@ -52,6 +52,9 @@ data/farms/<user>.json  ->  lib/financials/farm.js (payload builders + lib/marke
 - Engine IDs not live yet (`loan.schedule`, ...) are served from
   `lib/financial-engine/mocks.js` with the same shape, badged "Coming soon".
 - Suppliers and events are platform data (mock JSON), badged "Platform".
+- Ask Biddy: header box / New Chat → `/chat`. `lib/biddy.js` is the only Biddy client; without `BIDDY_URL`
+  a mock agent (`data/biddy/fixtures.json`) answers by calling the engine itself. Contract:
+  [docs/biddy-contract.md](docs/biddy-contract.md). `npm run check` verifies answers only quote engine figures.
 
 ## Scripts
 
