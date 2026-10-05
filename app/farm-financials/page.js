@@ -112,6 +112,48 @@ export default async function FarmFinancialsPage({ searchParams }) {
                     cashOut: m.cash_out,
                   }))}
                 />
+                <details className="mt-4 text-sm">
+                  <summary className="cursor-pointer text-emerald-800 hover:underline">Show month by month</summary>
+                  <div className="mt-3 overflow-x-auto">
+                    <table className="w-full min-w-[32rem] tabular-nums">
+                      <thead className="text-left text-xs text-stone-500">
+                        <tr>
+                          <th className="py-1 font-medium">Month</th>
+                          <th className="py-1 text-right font-medium">Cash in</th>
+                          <th className="py-1 text-right font-medium">Cash out</th>
+                          <th className="py-1 text-right font-medium">Net</th>
+                          <th className="py-1 text-right font-medium">Month-end</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100">
+                        {r.months.map((m) => {
+                          const { label, projected } = tag(m);
+                          return (
+                            <tr key={label} className={projected ? "text-stone-500" : ""}>
+                              <td className="py-1.5">
+                                {label}
+                                {projected && <span className="ml-1 text-xs">(proj.)</span>}
+                              </td>
+                              <td className="py-1.5 text-right">{formatCurrency(m.cash_in, r.currency)}</td>
+                              <td className="py-1.5 text-right">{formatCurrency(m.cash_out, r.currency)}</td>
+                              <td className={`py-1.5 text-right ${m.net_cash_flow < 0 ? "text-red-700" : ""}`}>{formatCurrency(m.net_cash_flow, r.currency)}</td>
+                              <td className={`py-1.5 text-right font-medium ${m.closing_cash < 0 ? "text-red-700" : ""}`}>{formatCurrency(m.closing_cash, r.currency)}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot className="border-t border-stone-200 font-semibold">
+                        <tr>
+                          <td className="py-1.5">Year</td>
+                          <td className="py-1.5 text-right">{formatCurrency(r.cash_in, r.currency)}</td>
+                          <td className="py-1.5 text-right">{formatCurrency(r.cash_out, r.currency)}</td>
+                          <td className="py-1.5 text-right">{formatCurrency(r.net_cash_flow, r.currency)}</td>
+                          <td className="py-1.5 text-right">{formatCurrency(r.closing_cash, r.currency)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </details>
               </>
             );
           }}
