@@ -1,5 +1,5 @@
 import { Badge, Card, COLORS } from "@/components/ui";
-import EngineGate, { providedFor } from "@/components/financials/EngineGate";
+import EngineGate, { withProvided } from "@/components/financials/EngineGate";
 import MonthlyChart from "@/components/financials/MonthlyChart";
 import CashChart from "@/components/financials/CashChart";
 import Breakdown, { expenseRows, incomeRows } from "@/components/financials/Breakdown";
@@ -7,7 +7,7 @@ import { EventsCard, LoansCard, Stat, SupplierDebtCard } from "@/components/fina
 import StatusTiles from "@/components/financials/StatusTiles";
 import SourcesToggle from "@/components/SourcesToggle";
 import { cfMonths, loanSchedule, plMonths } from "@/lib/financial-engine/client";
-import { buildCfMonthsInput, buildPlMonthsInput, getFarm, isProjected } from "@/lib/financials/farm";
+import { buildCfMonthsInput, buildLoanScheduleInput, buildPlMonthsInput, getFarm, isProjected } from "@/lib/financials/farm";
 import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
 
@@ -21,14 +21,28 @@ export default async function FarmFinancialsPage({ searchParams }) {
   const params = await searchParams;
   const farm = getFarm();
 
-  const [pl, loans] = await Promise.all([plMonths(buildPlMonthsInput(farm)), loanSchedule({})]);
-  // Projected cash needs projected milk revenue from pl.months, so cash waits for it.
+  const run = (fn, call, input) => call(withProvided(fn, params, input));
+
+  // Order matters: projected loan repayments come from loan.schedule, projected milk cheques from pl.months.
+  const loans = await run("loan.schedule", loanSchedule, buildLoanScheduleInput(farm));
+  const loanResult = loans.status === "ok" ? loans.result : null;
+  // P&L still runs without loans: repayments sit outside Operating Surplus, so surplus figures stay right.
+  const pl = await run("pl.months", plMonths, buildPlMonthsInput(farm, loanResult));
   const cf =
-    pl.status === "ok"
-      ? await cfMonths(buildCfMonthsInput(farm, pl.result, providedFor("cf.months", params)))
-      : { status: "error", error: { code: "needs_pl", message: "Cash flow needs the monthly P&L first." } };
+    pl.status !== "ok"
+      ? { status: "error", error: { code: "needs_pl", message: "Cash flow needs the monthly P&L first." } }
+      : !loanResult
+        ? { status: "error", error: { code: "needs_loans", message: "Cash flow needs the loan schedule first." } }
+        : await run("cf.months", cfMonths, buildCfMonthsInput(farm, pl.result, loanResult));
 
   const asOf = monthLabel(farm.actual_through_month);
+  // Say which month / loan a nested needs_input path points at (index = position in our request).
+  const describePath = (path) => {
+    const [, list, i] = path.match(/^(\w+)\[(\d+)\]/) ?? [];
+    if (list === "months") return farm.months[i] && monthLabel(farm.months[i].month);
+    if (list === "loans") return farm.loans[i]?.name;
+    return null;
+  };
   const tag = (m) => ({ label: monthLabel(m.period.month), projected: isProjected(farm, m.period.month) });
 
   return (
@@ -45,7 +59,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
 
       <StatusTiles pl={pl} cf={cf} loans={loans} farm={farm} />
 
-      <EngineGate response={pl} params={params}>
+      <EngineGate response={pl} params={params} describePath={describePath}>
         {({ months, ytd, currency }) => (
           <>
             <Card
@@ -76,7 +90,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
       </EngineGate>
 
       <Card title="Cash in the bank, month by month" subtitle="Month-end balance incl. loan repayments and machinery spend" badge={<Badge>cf.months</Badge>}>
-        <EngineGate response={cf} params={params}>
+        <EngineGate response={cf} params={params} describePath={describePath}>
           {(r) => {
             const now = r.months.find((m) => m.period.month === farm.actual_through_month);
             const lowest = r.months.reduce((a, b) => (b.closing_cash < a.closing_cash ? b : a));
@@ -107,7 +121,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2 2xl:grid-cols-3">
-        <LoansCard response={loans} />
+        <LoansCard response={loans} loans={farm.loans} params={params} describePath={describePath} />
         <SupplierDebtCard data={farm.suppliers} />
         <EventsCard data={farm.events} />
       </div>
