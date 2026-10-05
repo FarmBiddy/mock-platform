@@ -21,14 +21,18 @@ export default function RootLayout({ children }) {
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex items-center gap-3 border-b border-stone-200 bg-white px-4 py-3 sm:gap-4 sm:px-6">
             <span className="text-lg font-semibold tracking-tight text-[#173a2b] lg:hidden">FarmBiddy</span>
-            <label className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm">
+            {/* Native GET form: Enter opens a new Biddy chat with the question. */}
+            <form action="/chat" role="search" className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm">
               <span aria-hidden className="text-emerald-700">✦</span>
               <input
+                name="q"
+                required
+                maxLength={1000}
                 className="w-full bg-transparent outline-none placeholder:text-stone-400"
                 placeholder="Ask Biddy — “Will I have cash for the December feed bill?”"
                 aria-label="Ask Biddy"
               />
-            </label>
+            </form>
             <button type="button" aria-label="Notifications" className="relative rounded-full p-2 text-stone-600 hover:bg-stone-100">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
                 <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0" />

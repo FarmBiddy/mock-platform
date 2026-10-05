@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV } from "./nav";
+import { useChats } from "@/lib/chats";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const chats = useChats();
 
   return (
     <aside className="flex w-60 shrink-0 flex-col gap-6 bg-[#173a2b] px-4 py-6 text-[#dfe9df] max-lg:hidden">
@@ -14,15 +16,22 @@ export default function Sidebar() {
       </Link>
 
       <div className="space-y-2">
-        <button
-          type="button"
-          className="w-full rounded-xl bg-[#2f6b4a] px-3 py-2 text-left text-sm font-medium text-white hover:bg-[#387a55]"
+        <Link
+          href="/chat"
+          className="block w-full rounded-xl bg-[#2f6b4a] px-3 py-2 text-sm font-medium text-white hover:bg-[#387a55]"
         >
           + New Chat
-        </button>
-        <p className="px-2 pt-2 text-[11px] font-semibold uppercase tracking-wider text-[#8fb39c]">Recent</p>
-        <p className="truncate px-2 text-sm text-[#b9cfbf]">Can I afford the new tank?</p>
-        <p className="truncate px-2 text-sm text-[#b9cfbf]">Spring cash flow check</p>
+        </Link>
+        {chats.length > 0 && (
+          <>
+            <p className="px-2 pt-2 text-[11px] font-semibold uppercase tracking-wider text-[#8fb39c]">Recent</p>
+            {chats.slice(0, 6).map((c) => (
+              <Link key={c.id} href={`/chat?c=${c.id}`} className="block truncate rounded-lg px-2 py-1 text-sm text-[#b9cfbf] hover:bg-white/6 hover:text-white">
+                {c.title}
+              </Link>
+            ))}
+          </>
+        )}
       </div>
 
       <nav className="flex flex-col gap-0.5">
