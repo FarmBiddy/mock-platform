@@ -72,6 +72,15 @@ export default async function FarmFinancialsPage({ searchParams }) {
                 income: m.revenue.total,
                 costs: m.costs.total,
                 surplus: m.profit.net,
+                detail: {
+                  income: incomeRows(m.revenue),
+                  incomeTotal: m.revenue.total,
+                  costs: expenseRows(m.costs.lines),
+                  costsTotal: m.costs.total,
+                  surplus: m.profit.net,
+                  marginPct: m.profit.margin_pct,
+                  loanRepayments: m.finance.loan_repayments,
+                },
               }))}
             />
           </Card>
