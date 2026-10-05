@@ -55,3 +55,32 @@ export default function Breakdown({ rows, total, color = COLORS.income, currency
     </div>
   );
 }
+
+// Validated categorical order. ponytail: 3 hues; a 4th+ source reuses the last — add validated hues if an enterprise needs more.
+const STACK_COLORS = ["#2f7d4f", "#3b5fc0", "#c0508a"];
+
+/** Few rows (e.g. income sources): one stacked bar + labelled legend. Total is the engine's. */
+export function StackedBreakdown({ rows, total, currency }) {
+  const visible = rows.filter((r) => r.amount > 0).sort((a, b) => b.amount - a.amount);
+  const color = (i) => STACK_COLORS[Math.min(i, STACK_COLORS.length - 1)];
+
+  return (
+    <div>
+      <p className="text-2xl font-semibold tabular-nums">{formatCurrency(total, currency)}</p>
+      <div className="mt-4 flex h-3 gap-0.5 overflow-hidden rounded-full" role="img" aria-label="Income by source">
+        {visible.map((r, i) => (
+          <div key={r.label} style={{ width: `${(r.amount / total) * 100}%`, background: color(i) }} title={r.label} />
+        ))}
+      </div>
+      <ul className="mt-3 space-y-1.5 text-sm">
+        {visible.map((r, i) => (
+          <li key={r.label} className="flex items-center gap-2">
+            <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ background: color(i) }} />
+            <span className="flex-1 text-stone-700">{r.label}</span>
+            <span className="tabular-nums font-medium">{formatCurrency(r.amount, currency)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

@@ -2,7 +2,7 @@ import { Badge, Card, COLORS } from "@/components/ui";
 import EngineGate, { withProvided } from "@/components/financials/EngineGate";
 import MonthlyChart from "@/components/financials/MonthlyChart";
 import CashChart from "@/components/financials/CashChart";
-import Breakdown, { expenseRows, incomeRows } from "@/components/financials/Breakdown";
+import Breakdown, { StackedBreakdown, expenseRows, incomeRows } from "@/components/financials/Breakdown";
 import { EventsCard, LoansCard, Stat, SupplierDebtCard } from "@/components/financials/PlatformCards";
 import StatusTiles from "@/components/financials/StatusTiles";
 import SourcesToggle from "@/components/SourcesToggle";
@@ -60,32 +60,21 @@ export default async function FarmFinancialsPage({ searchParams }) {
       <StatusTiles pl={pl} cf={cf} loans={loans} farm={farm} />
 
       <EngineGate response={pl} params={params} describePath={describePath}>
-        {({ months, ytd, currency }) => (
-          <>
-            <Card
-              title="Operating Surplus by month"
-              subtitle="Income minus operating costs, Jan–Dec. Hatched months after “Today” are projected from your budget and market prices."
-              badge={<Badge>pl.months</Badge>}
-            >
-              <MonthlyChart
-                data={months.map((m) => ({
-                  ...tag(m),
-                  income: m.revenue.total,
-                  costs: m.costs.total,
-                  surplus: m.profit.net,
-                }))}
-              />
-            </Card>
-
-            <div className="grid gap-6 lg:grid-cols-2">
-              <Card title="Income Breakdown YTD" subtitle={`Jan–${asOf}`} badge={<Badge>pl.months · ytd</Badge>}>
-                <Breakdown rows={incomeRows(ytd.revenue)} total={ytd.revenue.total} currency={currency} />
-              </Card>
-              <Card title="Expense Breakdown YTD" subtitle={`Operating costs, Jan–${asOf}. Loan repayments excluded.`} badge={<Badge>pl.months · ytd</Badge>}>
-                <Breakdown rows={expenseRows(ytd.costs.lines)} total={ytd.costs.total} color={COLORS.costs} currency={currency} />
-              </Card>
-            </div>
-          </>
+        {({ months }) => (
+          <Card
+            title="Operating Surplus by month"
+            subtitle="Income minus operating costs, Jan–Dec. Hatched months after “Today” are projected from your budget and market prices."
+            badge={<Badge>pl.months</Badge>}
+          >
+            <MonthlyChart
+              data={months.map((m) => ({
+                ...tag(m),
+                income: m.revenue.total,
+                costs: m.costs.total,
+                surplus: m.profit.net,
+              }))}
+            />
+          </Card>
         )}
       </EngineGate>
 
@@ -120,10 +109,26 @@ export default async function FarmFinancialsPage({ searchParams }) {
         </EngineGate>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2 2xl:grid-cols-3">
-        <LoansCard response={loans} loans={farm.loans} params={params} describePath={describePath} />
-        <SupplierDebtCard data={farm.suppliers} />
+      {/* Two balanced columns: short income + loans on the left, the long expense list on the right. */}
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
+          {pl.status === "ok" && (
+            <Card title="Income YTD" subtitle={`Jan–${asOf}`} badge={<Badge>pl.months · ytd</Badge>}>
+              <StackedBreakdown rows={incomeRows(pl.result.ytd.revenue)} total={pl.result.ytd.revenue.total} currency={pl.result.currency} />
+            </Card>
+          )}
+          <LoansCard response={loans} loans={farm.loans} params={params} describePath={describePath} />
+        </div>
+        {pl.status === "ok" && (
+          <Card title="Expenses YTD" subtitle={`Operating costs, Jan–${asOf}. Loan repayments excluded.`} badge={<Badge>pl.months · ytd</Badge>}>
+            <Breakdown rows={expenseRows(pl.result.ytd.costs.lines)} total={pl.result.ytd.costs.total} color={COLORS.costs} currency={pl.result.currency} />
+          </Card>
+        )}
+      </div>
+
+      <div className="grid items-start gap-6 lg:grid-cols-2">
         <EventsCard data={farm.events} />
+        <SupplierDebtCard data={farm.suppliers} />
       </div>
     </div>
   );
