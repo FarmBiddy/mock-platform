@@ -6,8 +6,8 @@ import Breakdown, { StackedBreakdown, expenseRows, incomeRows } from "@/componen
 import { EventsCard, LoansCard, Stat, SupplierDebtCard } from "@/components/financials/PlatformCards";
 import StatusTiles from "@/components/financials/StatusTiles";
 import SourcesToggle from "@/components/SourcesToggle";
-import { cfMonths, loanSchedule, plMonths } from "@/lib/financial-engine/client";
-import { buildCfMonthsInput, buildLoanScheduleInput, buildPlMonthsInput, getFarm, isProjected } from "@/lib/financials/farm";
+import { getFarm, isProjected, runFarm } from "@/lib/financials/farm";
+import { cashChartData, surplusChartData } from "@/lib/financials/views";
 import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
 
@@ -21,19 +21,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
   const params = await searchParams;
   const farm = getFarm();
 
-  const run = (fn, call, input) => call(withProvided(fn, params, input));
-
-  // Order matters: projected loan repayments come from loan.schedule, projected milk cheques from pl.months.
-  const loans = await run("loan.schedule", loanSchedule, buildLoanScheduleInput(farm));
-  const loanResult = loans.status === "ok" ? loans.result : null;
-  // P&L still runs without loans: repayments sit outside Operating Surplus, so surplus figures stay right.
-  const pl = await run("pl.months", plMonths, buildPlMonthsInput(farm, loanResult));
-  const cf =
-    pl.status !== "ok"
-      ? { status: "error", error: { code: "needs_pl", message: "Cash flow needs the monthly P&L first." } }
-      : !loanResult
-        ? { status: "error", error: { code: "needs_loans", message: "Cash flow needs the loan schedule first." } }
-        : await run("cf.months", cfMonths, buildCfMonthsInput(farm, pl.result, loanResult));
+  const { loans, pl, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
 
   const asOf = monthLabel(farm.actual_through_month);
   // Say which month / loan a nested needs_input path points at (index = position in our request).
@@ -66,23 +54,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
             subtitle="Income minus operating costs, Jan–Dec. Hatched months after “Today” are projected from your budget and market prices."
             badge={<Badge>pl.months</Badge>}
           >
-            <MonthlyChart
-              data={months.map((m) => ({
-                ...tag(m),
-                income: m.revenue.total,
-                costs: m.costs.total,
-                surplus: m.profit.net,
-                detail: {
-                  income: incomeRows(m.revenue),
-                  incomeTotal: m.revenue.total,
-                  costs: expenseRows(m.costs.lines),
-                  costsTotal: m.costs.total,
-                  surplus: m.profit.net,
-                  marginPct: m.profit.margin_pct,
-                  loanRepayments: m.finance.loan_repayments,
-                },
-              }))}
-            />
+            <MonthlyChart data={surplusChartData(farm, months)} />
           </Card>
         )}
       </EngineGate>
@@ -104,14 +76,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
                   />
                   <Stat label="Projected 31 Dec" value={formatCurrency(r.closing_cash, r.currency)} />
                 </div>
-                <CashChart
-                  data={r.months.map((m) => ({
-                    ...tag(m),
-                    closing: m.closing_cash,
-                    cashIn: m.cash_in,
-                    cashOut: m.cash_out,
-                  }))}
-                />
+                <CashChart data={cashChartData(farm, r.months)} />
                 <details className="mt-4 text-sm">
                   <summary className="cursor-pointer text-emerald-800 hover:underline">Show month by month</summary>
                   <div className="mt-3 overflow-x-auto">
