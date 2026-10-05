@@ -49,8 +49,9 @@ data/farms/<user>.json  ->  lib/financials/farm.js (payload builders + lib/marke
 - Loan repayments are not operating costs: they show in Loans and in cash flow.
 - `needs_input` renders a form for exactly the missing fields; answers come back
   as `?<function>:<field>=<value>` and are sent on the next engine call.
-- Engine IDs not live yet (`loan.schedule`, ...) are served from
-  `lib/financial-engine/mocks.js` with the same shape, badged "Coming soon".
+- Engine IDs not live yet can be served from `lib/financial-engine/mocks.js` with the
+  same shape (badged "Coming soon"); none are mocked today. `loan.schedule` needs the
+  engine's `cash-planning` work (on its way to engine main).
 - Suppliers and events are platform data (mock JSON), badged "Platform".
 - Ask Biddy: header box / New Chat → `/chat`. `lib/biddy.js` is the only Biddy client; without `BIDDY_URL`
   a mock agent (`data/biddy/fixtures.json`) answers by calling the engine itself. Contract:
@@ -63,3 +64,4 @@ data/farms/<user>.json  ->  lib/financials/farm.js (payload builders + lib/marke
 | `npm run dev` | Local development    |
 | `npm run build` | Production build   |
 | `npm run lint` | ESLint               |
+| `npm run check` | Biddy figure checks |
