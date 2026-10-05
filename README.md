@@ -1,8 +1,9 @@
 # FarmBiddy Mock Platform
 
-Standalone Next.js prototype that collects annual Dairy farm inputs, calls the
-external **FarmBiddy Financial Engine** over HTTP/JSON, and displays the
-calculated Operating Statement.
+Standalone Next.js prototype of the FarmBiddy farmer app. Demo user Joe Bloggs
+(dairy): monthly farm data lives in the platform, is sent to the external
+**FarmBiddy Financial Engine** over HTTP/JSON, and Farm Financials shows the
+results (monthly P&L, YTD breakdowns, cash balance, loans, suppliers, events).
 
 This project contains **no financial calculation logic**. All P&L maths live in
 the Financial Engine.
@@ -33,36 +34,24 @@ NEXT_PUBLIC_FINANCIAL_ENGINE_URL=http://127.0.0.1:8000
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) (use `localhost`, not
-`127.0.0.1`, so the engine’s default CORS allowlist matches).
-
-Farm Financials: [http://localhost:3000/farm-financials](http://localhost:3000/farm-financials)
+Open [http://localhost:3000/farm-financials](http://localhost:3000/farm-financials).
 
 ## Architecture
 
 ```
-Mock Platform (this app)  --HTTP/JSON-->  Financial Engine (separate repo)
-       ↑                                         |
-       +------------- structured result ---------+
+data/farms/<user>.json  ->  lib/financials/farm.js (payload builders + lib/market.js prices)
+                         ->  lib/financial-engine/client.js (ONLY engine client: ok | needs_input | error)
+                         ->  app/farm-financials/page.js (server component) -> components/
 ```
 
-- Integration client: `lib/financial-engine/`
-- Platform-only mock panels: `data/platform-mocks/` (never sent to the engine)
-
-## Smoke check (I3)
-
-See [docs/I3-verification.md](docs/I3-verification.md) for the full checklist.
-
-1. Start the Financial Engine.
-2. Open `/farm-financials` with the sample defaults filled in.
-3. Click **Calculate annual financials**.
-4. Confirm displayed figures match the approved reference:
-   - Operating Income: 240000
-   - Schemes: 25000
-   - Operating Costs: 163000
-   - Operating Surplus: 77000
-   - Margin: 32.08%
-   - Loan repayments: 12000
+- Every money figure on screen is published by the engine. The UI only groups
+  engine lines for display (e.g. Machinery & fuel = fuel + repairs_maintenance).
+- Loan repayments are not operating costs: they show in Loans and in cash flow.
+- `needs_input` renders a form for exactly the missing fields; answers come back
+  as `?<function>:<field>=<value>` and are sent on the next engine call.
+- Engine IDs not live yet (`loan.schedule`, ...) are served from
+  `lib/financial-engine/mocks.js` with the same shape, badged "Coming soon".
+- Suppliers and events are platform data (mock JSON), badged "Platform".
 
 ## Scripts
 

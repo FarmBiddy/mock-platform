@@ -1,111 +1,115 @@
-"use client";
+import { Badge, Card, COLORS } from "@/components/ui";
+import EngineGate, { providedFor } from "@/components/financials/EngineGate";
+import MonthlyChart from "@/components/financials/MonthlyChart";
+import CashChart from "@/components/financials/CashChart";
+import Breakdown, { expenseRows, incomeRows } from "@/components/financials/Breakdown";
+import { EventsCard, LoansCard, Stat, SupplierDebtCard } from "@/components/financials/PlatformCards";
+import StatusTiles from "@/components/financials/StatusTiles";
+import SourcesToggle from "@/components/SourcesToggle";
+import { cfMonths, loanSchedule, plMonths } from "@/lib/financial-engine/client";
+import { buildCfMonthsInput, buildPlMonthsInput, getFarm, isProjected } from "@/lib/financials/farm";
+import { formatCurrency } from "@/lib/format/currency";
+import { monthLabel } from "@/lib/format/date";
 
-import { useState } from "react";
-import AnnualDairyForm from "@/components/financials/AnnualDairyForm";
-import ResultsPanel from "@/components/financials/ResultsPanel";
-import StatusBanner from "@/components/financials/StatusBanner";
-import LoanCards from "@/components/platform/LoanCards";
-import SupplierBalances from "@/components/platform/SupplierBalances";
-import UpcomingEvents from "@/components/platform/UpcomingEvents";
-import AnnualChart from "@/components/platform/AnnualChart";
-import { runAnnualPlSummary } from "@/lib/financial-engine/client";
-import { SAMPLE_ANNUAL_DAIRY_INPUTS } from "@/lib/financials/sampleInputs";
+export const metadata = { title: "Farm Financials · FarmBiddy" };
 
 /**
- * Annual Farm Financials page.
- * Form → HTTP → Financial Engine → display. No local financial maths.
+ * Farm Financials. Platform data → Financial Engine → display.
+ * Every money figure on this page is engine-published (grouping for display only).
  */
-export default function FarmFinancialsPage() {
-  const [values, setValues] = useState(() => ({ ...SAMPLE_ANNUAL_DAIRY_INPUTS }));
-  const [phase, setPhase] = useState("idle");
-  const [response, setResponse] = useState(null);
+export default async function FarmFinancialsPage({ searchParams }) {
+  const params = await searchParams;
+  const farm = getFarm();
 
-  function handleChange(name, value) {
-    setValues((prev) => ({ ...prev, [name]: value }));
-  }
+  const [pl, loans] = await Promise.all([plMonths(buildPlMonthsInput(farm)), loanSchedule({})]);
+  // Projected cash needs projected milk revenue from pl.months, so cash waits for it.
+  const cf =
+    pl.status === "ok"
+      ? await cfMonths(buildCfMonthsInput(farm, pl.result, providedFor("cf.months", params)))
+      : { status: "error", error: { code: "needs_pl", message: "Cash flow needs the monthly P&L first." } };
 
-  function handleReset() {
-    setValues({ ...SAMPLE_ANNUAL_DAIRY_INPUTS });
-    setPhase("idle");
-    setResponse(null);
-  }
-
-  async function handleSubmit() {
-    const payload = {};
-    for (const [key, value] of Object.entries(values)) {
-      if (value === "" || value === null || value === undefined) continue;
-      const num = Number(value);
-      if (!Number.isFinite(num)) continue;
-      payload[key] = num;
-    }
-
-    setPhase("loading");
-    setResponse(null);
-
-    const outcome = await runAnnualPlSummary(payload);
-    setResponse(outcome);
-    setPhase(outcome.kind === "ok" ? "ok" : outcome.kind);
-  }
-
-  const engineResult =
-    response?.kind === "ok" ? response.body?.result ?? null : null;
+  const asOf = monthLabel(farm.actual_through_month);
+  const tag = (m) => ({ label: monthLabel(m.period.month), projected: isProjected(farm, m.period.month) });
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <header className="mb-8 space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-800">
-          FarmBiddy Mock Platform
-        </p>
-        <h1 className="text-3xl font-semibold tracking-tight text-stone-900">
-          Farm Financials
-        </h1>
-        <p className="max-w-2xl text-sm text-stone-600">
-          Annual Dairy Operating Statement. Enter farm drivers below; totals and
-          margins come from the external Financial Engine over HTTP — this page
-          does not calculate them.
-        </p>
-      </header>
-
-      <div className="mb-6">
-        <StatusBanner phase={phase} response={response} />
-      </div>
-
-      <div className="grid gap-10 lg:grid-cols-2">
-        <section className="rounded border border-stone-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-lg font-semibold text-stone-900">
-            Annual inputs
-          </h2>
-          <AnnualDairyForm
-            values={values}
-            onChange={handleChange}
-            onSubmit={handleSubmit}
-            onReset={handleReset}
-            isLoading={phase === "loading"}
-          />
-        </section>
-
-        <section className="rounded border border-stone-200 bg-white p-5 shadow-sm">
-          <ResultsPanel result={engineResult} />
-        </section>
-      </div>
-
-      <div className="mt-12 space-y-8 border-t border-stone-200 pt-10">
+    <div className="space-y-6 p-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-stone-900">
-            Platform overview
-          </h2>
-          <p className="mt-1 text-sm text-stone-500">
-            The panels below use mock Platform data only. They are not Financial
-            Engine capabilities and are never included in the calculation
-            request.
+          <h1 className="text-2xl font-semibold tracking-tight">Farm Financials</h1>
+          <p className="text-sm text-stone-500">
+            {farm.profile.farm_name} · {farm.year} · actuals to end of {asOf}, budget after
           </p>
         </div>
-        <div className="grid gap-8 lg:grid-cols-2">
-          <LoanCards />
-          <SupplierBalances />
-          <UpcomingEvents />
-          <AnnualChart />
-        </div>
+        <SourcesToggle />
+      </div>
+
+      <StatusTiles pl={pl} cf={cf} loans={loans} farm={farm} />
+
+      <EngineGate response={pl} params={params}>
+        {({ months, ytd, currency }) => (
+          <>
+            <Card
+              title="Operating Surplus by month"
+              subtitle="Income minus operating costs, Jan–Dec. Hatched months after “Today” are projected from your budget and market prices."
+              badge={<Badge>pl.months</Badge>}
+            >
+              <MonthlyChart
+                data={months.map((m) => ({
+                  ...tag(m),
+                  income: m.revenue.total,
+                  costs: m.costs.total,
+                  surplus: m.profit.net,
+                }))}
+              />
+            </Card>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card title="Income Breakdown YTD" subtitle={`Jan–${asOf}`} badge={<Badge>pl.months · ytd</Badge>}>
+                <Breakdown rows={incomeRows(ytd.revenue)} total={ytd.revenue.total} currency={currency} />
+              </Card>
+              <Card title="Expense Breakdown YTD" subtitle={`Operating costs, Jan–${asOf}. Loan repayments excluded.`} badge={<Badge>pl.months · ytd</Badge>}>
+                <Breakdown rows={expenseRows(ytd.costs.lines)} total={ytd.costs.total} color={COLORS.costs} currency={currency} />
+              </Card>
+            </div>
+          </>
+        )}
+      </EngineGate>
+
+      <Card title="Cash in the bank, month by month" subtitle="Month-end balance incl. loan repayments and machinery spend" badge={<Badge>cf.months</Badge>}>
+        <EngineGate response={cf} params={params}>
+          {(r) => {
+            const now = r.months.find((m) => m.period.month === farm.actual_through_month);
+            const lowest = r.months.reduce((a, b) => (b.closing_cash < a.closing_cash ? b : a));
+            return (
+              <>
+                <div className="mb-4 flex flex-wrap gap-8">
+                  <Stat label={`Balance end of ${asOf}`} value={formatCurrency(now?.closing_cash, r.currency)} />
+                  <Stat
+                    label="Lowest point this year"
+                    value={formatCurrency(lowest.closing_cash, r.currency)}
+                    danger={lowest.closing_cash < 0}
+                    hint={`${monthLabel(lowest.period.month)}${isProjected(farm, lowest.period.month) ? " (projected)" : ""}`}
+                  />
+                  <Stat label="Projected 31 Dec" value={formatCurrency(r.closing_cash, r.currency)} />
+                </div>
+                <CashChart
+                  data={r.months.map((m) => ({
+                    ...tag(m),
+                    closing: m.closing_cash,
+                    cashIn: m.cash_in,
+                    cashOut: m.cash_out,
+                  }))}
+                />
+              </>
+            );
+          }}
+        </EngineGate>
+      </Card>
+
+      <div className="grid gap-6 lg:grid-cols-2 2xl:grid-cols-3">
+        <LoansCard response={loans} />
+        <SupplierDebtCard data={farm.suppliers} />
+        <EventsCard data={farm.events} />
       </div>
     </div>
   );

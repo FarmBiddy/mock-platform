@@ -1,0 +1,64 @@
+{
+  "profile": {
+    "id": "joe-bloggs",
+    "name": "Joe Bloggs",
+    "initials": "JB",
+    "farm_name": "Bloggs Farm",
+    "county": "Co. Cork",
+    "enterprise": "dairy"
+  },
+  "year": 2026,
+  "actual_through_month": 9,
+  "opening_cash": 30000,
+  "months": [
+    { "month": 1, "pl": { "milk_litres": 6000, "milk_price": 0.44, "loan_repayments": 1650 }, "cash": { "milk": 3200, "loan_principal_repayments": 1420, "interest_paid": 230 },
+      "lines": { "feed": 9000, "vet": 600, "labour": 2800, "fuel": 450, "electricity": 520, "repairs_maintenance": 400, "levies": 20 } },
+    { "month": 2, "pl": { "milk_litres": 28000, "milk_price": 0.44, "loan_repayments": 1650 }, "cash": { "milk": 2640, "loan_principal_repayments": 1420, "interest_paid": 230 },
+      "lines": { "feed": 8500, "vet": 2400, "labour": 3800, "fuel": 480, "electricity": 560, "levies": 90, "cattle_sales": 1200 } },
+    { "month": 3, "pl": { "milk_litres": 62000, "milk_price": 0.45, "loan_repayments": 1650 }, "cash": { "milk": 12320, "loan_principal_repayments": 1420, "interest_paid": 230 },
+      "lines": { "feed": 6500, "fertiliser": 4500, "vet": 1800, "labour": 3800, "insurance": 4000, "fuel": 520, "electricity": 600, "rent_lease": 6000, "levies": 200, "cattle_sales": 4800 } },
+    { "month": 4, "pl": { "milk_litres": 78000, "milk_price": 0.46, "loan_repayments": 1650 }, "cash": { "milk": 27900, "loan_principal_repayments": 1420, "interest_paid": 230 },
+      "lines": { "feed": 3800, "fertiliser": 5200, "vet": 900, "labour": 3400, "fuel": 560, "electricity": 620, "professional_fees": 1500, "levies": 250, "cattle_sales": 3600 } },
+    { "month": 5, "pl": { "milk_litres": 86000, "milk_price": 0.46, "loan_repayments": 1650 }, "cash": { "milk": 35880, "loan_principal_repayments": 1420, "interest_paid": 230, "machinery_equipment_payments": 8500 },
+      "lines": { "feed": 2600, "fertiliser": 4200, "vet": 500, "contractor": 2400, "labour": 3200, "fuel": 600, "electricity": 640, "repairs_maintenance": 1200, "levies": 280 } },
+    { "month": 6, "pl": { "milk_litres": 80000, "milk_price": 0.47, "loan_repayments": 1650 }, "cash": { "milk": 39560, "loan_principal_repayments": 1420, "interest_paid": 230 },
+      "lines": { "feed": 2400, "fertiliser": 2800, "vet": 450, "contractor": 6800, "labour": 3200, "fuel": 680, "electricity": 610, "levies": 260, "acres": 5200 } },
+    { "month": 7, "pl": { "milk_litres": 70000, "milk_price": 0.48, "loan_repayments": 1650 }, "cash": { "milk": 37600, "loan_principal_repayments": 1420, "interest_paid": 230 },
+      "lines": { "feed": 2800, "fertiliser": 1600, "vet": 400, "labour": 3000, "fuel": 560, "electricity": 590, "repairs_maintenance": 2600, "levies": 230 } },
+    { "month": 8, "pl": { "milk_litres": 62000, "milk_price": 0.49, "loan_repayments": 1650 }, "cash": { "milk": 33600, "loan_principal_repayments": 1420, "interest_paid": 230 },
+      "lines": { "feed": 3200, "fertiliser": 1200, "vet": 420, "contractor": 3200, "labour": 3000, "fuel": 540, "electricity": 570, "levies": 200, "other_operating_costs": 600 } },
+    { "month": 9, "pl": { "milk_litres": 52000, "milk_price": 0.5, "loan_repayments": 1650 }, "cash": { "milk": 30380, "loan_principal_repayments": 1420, "interest_paid": 230 },
+      "lines": { "feed": 4200, "vet": 500, "labour": 3000, "fuel": 500, "electricity": 560, "levies": 170, "cattle_sales": 2500 } },
+    { "month": 10, "pl": { "milk_litres": 40000, "loan_repayments": 1650 }, "cash": { "loan_principal_repayments": 1420, "interest_paid": 230 },
+      "lines": { "feed": 6000, "vet": 600, "labour": 3000, "fuel": 480, "electricity": 540, "levies": 130, "cattle_sales": 6000, "biss": 14000 } },
+    { "month": 11, "pl": { "milk_litres": 22000, "loan_repayments": 1650 }, "cash": { "loan_principal_repayments": 1420, "interest_paid": 230 },
+      "lines": { "feed": 8000, "vet": 700, "labour": 2800, "fuel": 450, "electricity": 520, "levies": 70, "professional_fees": 1200, "cattle_sales": 4000 } },
+    { "month": 12, "pl": { "milk_litres": 4000, "loan_repayments": 1650 }, "cash": { "loan_principal_repayments": 1420, "interest_paid": 230 },
+      "lines": { "feed": 8800, "vet": 500, "labour": 2800, "fuel": 450, "electricity": 520, "levies": 10, "biss": 6000 } }
+  ],
+  "suppliers": {
+    "currency": "EUR",
+    "total_outstanding": 9040,
+    "overdue": 1850,
+    "suppliers": [
+      { "id": "sup-feed", "name": "GreenFeed Co-op", "category": "Feed", "balance": 4200, "due_date": "2026-10-20", "overdue": false },
+      { "id": "sup-machinery", "name": "Murphy Agri Services", "category": "Repairs", "balance": 2350, "due_date": "2026-10-31", "overdue": false },
+      { "id": "sup-fert", "name": "Valley Fertiliser", "category": "Fertiliser", "balance": 1850, "due_date": "2026-09-30", "overdue": true },
+      { "id": "sup-vet", "name": "Riverside Vet", "category": "Vet", "balance": 640, "due_date": "2026-11-04", "overdue": false }
+    ]
+  },
+  "events": {
+    "currency": "EUR",
+    "year": 2026,
+    "month": 10,
+    "total_in": 46000,
+    "total_out": 5850,
+    "events": [
+      { "id": "evt-loans", "date": "2026-10-01", "title": "Loan repayments", "direction": "out", "amount": 1650 },
+      { "id": "evt-milk", "date": "2026-10-15", "title": "Milk cheque (September supply)", "direction": "in", "amount": 26000 },
+      { "id": "evt-biss", "date": "2026-10-16", "title": "BISS advance payment", "direction": "in", "amount": 14000 },
+      { "id": "evt-feed", "date": "2026-10-20", "title": "GreenFeed Co-op account", "direction": "out", "amount": 4200 },
+      { "id": "evt-culls", "date": "2026-10-28", "title": "Cull cow sale", "direction": "in", "amount": 6000 }
+    ]
+  }
+}

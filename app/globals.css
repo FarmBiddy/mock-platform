@@ -14,3 +14,8 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* Engine/platform source badges are for us, not the farmer: hidden unless "Show sources" is on. */
+html:not([data-sources]) .source-badge {
+  display: none;
+}
