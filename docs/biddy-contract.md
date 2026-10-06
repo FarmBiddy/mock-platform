@@ -131,6 +131,21 @@ These are engine outputs for the current mock data; they change whenever the far
 | Projected cash 31 Dec | €79,469.78 (incl. €2,500/month household drawings) |
 | Loans outstanding / monthly | €65,951.03 / €1,631.37 |
 
+## Handing off to the advisor
+
+For big decisions (an investment, a new loan, projected negative cash) Biddy can suggest a second opinion instead of
+deciding. It links the farmer to the platform's share page; the farmer adds a note and confirms there, and the view
+lands in the advisor's portfolio:
+
+```
+/share?title=<what it is, ≤80 chars>&summary=<engine figures, ≤200 chars>&href=<page that reproduces the view>
+```
+
+- `href` must be a platform page: `/plan`, `/farm-financials`, `/dashboard` or `/reports`, with its query string
+  (e.g. `/plan?s=cautious&inv=parlour`). Anything else is rejected.
+- Nothing is sent without the farmer pressing **Send** on that page. The advisor opens the same view on the client's farm.
+- Summary figures should be quoted from engine results, like any answer.
+
 ## How we'd test it (platform side)
 
 1. `lib/biddy.js`: `ask(request)` → `answer | needs_input | error`, same shape as `lib/financial-engine/client.js`.

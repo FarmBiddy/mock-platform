@@ -29,7 +29,7 @@ const ym = (p) => `${monthLabel(p.month)} ${String(p.year).slice(2)}`;
 export default async function PlanPage({ searchParams }) {
   const sp = await searchParams;
   const farm = await loadFarm();
-  const { pro } = await getViewer();
+  const { pro, role } = await getViewer();
   const presets = farm.plan_presets ?? {};
   const presetKeys = Object.keys(presets).filter((k) => !k.startsWith("_"));
   const presetKey = presetKeys.includes(one(sp.s)) ? one(sp.s) : "base";
@@ -61,6 +61,15 @@ export default async function PlanPage({ searchParams }) {
   const lowest = (pick) => plan?.years.reduce((a, b) => (pick(b) != null && (pick(a) == null || pick(b) < pick(a)) ? b : a));
   const lowDscr = lowest((y) => y.debt.dscr);
   const lowCash = lowest((y) => y.cash.closing);
+  // Same view for the advisor: the plan URL with this scenario, and engine figures as a one-line summary.
+  const query = new URLSearchParams([["s", presetKey], ...(price == null ? [] : [["price", price]]), ...(inflation == null ? [] : [["infl", inflation]]), ...investments.map((i) => ["inv", i.id])]);
+  const share =
+    plan &&
+    new URLSearchParams({
+      title: `Five-year plan: ${preset.label}${investments.length ? ` + ${investments.map((i) => i.name).join(", ")}` : ""}`,
+      summary: `Lowest year-end cash ${formatCurrency(lowCash.cash.closing)} (year ${lowCash.year}) · weakest loan cover ${fmt(lowDscr.debt.dscr, 2)}× · net worth in year ${YEARS} ${formatCurrency(last.balance_sheet.net_worth)}`,
+      href: `/plan?${query}`,
+    });
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
@@ -131,6 +140,13 @@ export default async function PlanPage({ searchParams }) {
                   hint={`Year ${lowDscr.year}${farm.new_loan_terms?.min_cover ? ` · lender minimum ${fmt(farm.new_loan_terms.min_cover, 2)}×` : ""}`}
                 />
               </div>
+
+              {role === "owner" && (
+                <Link href={`/share?${share}`} className="flex items-center justify-between gap-3 rounded-2xl bg-sky-50 px-5 py-3 text-sm text-sky-900 ring-1 ring-sky-200 hover:bg-sky-100">
+                  <span>Big decision? Get a second opinion before you commit.</span>
+                  <span className="shrink-0 font-medium">Share with my advisor →</span>
+                </Link>
+              )}
 
               <Card title="Cash and net worth" subtitle="At the end of each plan year" badge={<Badge>plan.projection</Badge>}>
                 <PlanCharts

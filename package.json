@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "check": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-biddy.mjs && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-farm-edits.mjs"
+    "check": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-biddy.mjs && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-farm-edits.mjs && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-shared.mjs"
   },
   "dependencies": {
     "next": "16.3.6",

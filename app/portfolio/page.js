@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { openClient } from "@/app/session-actions";
+import { dismissShare, openShare } from "@/app/share/actions";
 import { DSCR_OK } from "@/components/financials/StatusTiles";
 import { Badge, Card } from "@/components/ui";
 import { loadFarm } from "@/lib/farm-edits";
@@ -9,6 +10,7 @@ import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
 import { formatMarginPct } from "@/lib/format/percent";
 import { ADVISOR, getViewer } from "@/lib/session";
+import { readShares } from "@/lib/shared";
 
 export const metadata = { title: "Portfolio · FarmBiddy" };
 
@@ -40,6 +42,8 @@ export default async function PortfolioPage() {
   const { role, farmId } = await getViewer();
   if (role !== "advisor") redirect("/dashboard");
   const rows = (await Promise.all(ADVISOR.clients.map(clientRow))).sort(byRisk);
+  const shares = await readShares();
+  const farmOf = (id) => rows.find((r) => r.farm.profile.id === id)?.farm.profile;
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
@@ -49,6 +53,39 @@ export default async function PortfolioPage() {
           {ADVISOR.name} · {ADVISOR.org} · {rows.length} dairy clients, riskiest first
         </p>
       </div>
+
+      {shares.length > 0 && (
+        <Card title="Shared by your clients" subtitle="Views a client prepared and sent you, newest first">
+          <ul className="divide-y divide-stone-100 text-sm">
+            {shares.map((sh) => (
+              <li key={sh.id} className="flex flex-wrap items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">
+                    {farmOf(sh.farm)?.farm_name ?? sh.farm} · {sh.title}
+                  </p>
+                  {sh.summary && <p className="text-stone-600">{sh.summary}</p>}
+                  {sh.note && <p className="mt-1 rounded-lg bg-sky-50 px-3 py-1.5 text-sky-900">“{sh.note}” — {farmOf(sh.farm)?.name}</p>}
+                  <p className="mt-1 text-xs text-stone-400">
+                    {new Date(sh.at).toLocaleString("en-IE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <form action={openShare}>
+                    <button name="id" value={sh.id} className="rounded-full bg-emerald-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-900">
+                      Open
+                    </button>
+                  </form>
+                  <form action={dismissShare}>
+                    <button name="id" value={sh.id} className="rounded-full px-3 py-1.5 text-xs text-stone-600 ring-1 ring-stone-300 hover:bg-stone-50">
+                      Done
+                    </button>
+                  </form>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <Card title="Clients side by side" subtitle="This year’s actuals to date and the engine’s forecast to December" badge={<Badge>kpi.summary · pl.months · cf.months</Badge>}>
         <div className="-mx-5 overflow-x-auto px-5">
@@ -75,6 +112,7 @@ export default async function PortfolioPage() {
                       {farm.profile.name} · {farm.profile.county} · {farm.milking_cows ?? "?"} cows
                       {farm.profile.id === farmId && " · open"}
                       {farm.editCount > 0 && " · edited"}
+                      {shares.some((sh) => sh.farm === farm.profile.id) && <span className="ml-1 rounded-full bg-sky-100 px-1.5 text-sky-800">shared</span>}
                     </p>
                   </td>
                   <td className="py-3 pr-4 text-right tabular-nums">

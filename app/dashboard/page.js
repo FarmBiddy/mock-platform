@@ -73,6 +73,14 @@ export default async function DashboardPage() {
               ))}
             </ul>
           )}
+          {role === "owner" && items.some((it) => it.tone === "bad") && (
+            <Link
+              href={`/share?${new URLSearchParams({ title: "Needs attention on my farm", summary: items.slice(0, 2).map((it) => it.text).join(" · "), href: "/farm-financials" })}`}
+              className="mt-3 inline-block text-sm font-medium text-sky-800 hover:underline"
+            >
+              Share with my advisor →
+            </Link>
+          )}
         </Card>
         <EventsCard data={farm.events} />
       </div>
