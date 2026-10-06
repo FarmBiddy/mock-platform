@@ -8,6 +8,7 @@ import StatusTiles from "@/components/financials/StatusTiles";
 import KpiCard from "@/components/financials/KpiCard";
 import Change from "@/components/financials/Change";
 import WhatIfCard from "@/components/financials/WhatIfCard";
+import BorrowCard from "@/components/financials/BorrowCard";
 import SourcesToggle from "@/components/SourcesToggle";
 import { buildRiskInput, getFarm, isProjected, runFarm } from "@/lib/financials/farm";
 import { riskSensitivity } from "@/lib/financial-engine/client";
@@ -25,7 +26,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
   const params = await searchParams;
   const farm = getFarm();
 
-  const { inputs, loans, plf, pl, kpi, plc, cff, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
+  const { inputs, loans, plf, pl, kpi, plc, cap, cff, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
 
   const asOf = monthLabel(farm.actual_through_month);
   // Say which month / loan a nested needs_input path points at, from the request that was sent.
@@ -144,7 +145,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
 
       {risk && <WhatIfCard initial={risk} />}
 
-      {/* Two balanced columns: short income + loans on the left, the long expense list on the right. */}
+      {/* Two balanced columns: income + loans on the left, expenses + borrowing capacity on the right. */}
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <div className="space-y-6">
           {pl.status === "ok" && (
@@ -166,17 +167,20 @@ export default async function FarmFinancialsPage({ searchParams }) {
           )}
           <LoansCard response={loans} loans={farm.loans} params={params} describePath={describePath} />
         </div>
-        {pl.status === "ok" && (
-          <Card title="Expenses YTD" subtitle={`Operating costs, Jan–${asOf}. Loan repayments excluded.`} badge={<Badge>pl.months · ytd</Badge>}>
-            <Breakdown
-              rows={expenseRows(pl.result.ytd.costs.lines)}
-              total={pl.result.ytd.costs.total}
-              color={COLORS.costs}
-              currency={pl.result.currency}
-              change={vs && <Change leaf={vs.costs.total} label={vsLabel} upIsGood={false} />}
-            />
-          </Card>
-        )}
+        <div className="space-y-6">
+          {pl.status === "ok" && (
+            <Card title="Expenses YTD" subtitle={`Operating costs, Jan–${asOf}. Loan repayments excluded.`} badge={<Badge>pl.months · ytd</Badge>}>
+              <Breakdown
+                rows={expenseRows(pl.result.ytd.costs.lines)}
+                total={pl.result.ytd.costs.total}
+                color={COLORS.costs}
+                currency={pl.result.currency}
+                change={vs && <Change leaf={vs.costs.total} label={vsLabel} upIsGood={false} />}
+              />
+            </Card>
+          )}
+          <BorrowCard response={cap} params={params} describePath={describePath} />
+        </div>
       </div>
 
       <div className="grid items-start gap-6 lg:grid-cols-2">

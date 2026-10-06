@@ -2,36 +2,89 @@
   "_note": "Mock agents for the demo user. Each intent runs ONE engine function with the request's inputs and fills {paths} from the engine result. Text is written for Joe Bloggs (e.g. March is his lowest cash month).",
   "intents": [
     {
+      "id": "borrow",
+      "agent": "finance",
+      "match": [
+        "borrow",
+        "new loan",
+        "take out a loan",
+        "lend me",
+        "how much can i get"
+      ],
+      "function": "debt.capacity",
+      "show": "borrowing",
+      "text": "Based on this year (actual + forecast), after {result.drawings} of drawings and {result.tax} of tax you can repay {result.repayment_capacity} a year, and your current loans take {result.debt_service}. A lender wanting {result.min_cover|times} cover could lend you up to {result.new_loan.max_principal} more over {result.new_loan.term_months|months}, at about {result.new_loan.monthly_payment_at_max} a month.",
+      "follow_ups": [
+        "Am I profitable this year?",
+        "How much do I owe on my loans?"
+      ]
+    },
+    {
       "id": "cash",
       "agent": "finance",
-      "match": ["cash", "bank", "overdra", "afford", "balance", "money left"],
+      "match": [
+        "cash",
+        "bank",
+        "overdra",
+        "afford",
+        "balance",
+        "money left"
+      ],
       "function": "cf.months",
       "show": "cash_by_month",
       "text": "Yes. You're projected to have {result.months[10].closing_cash} at the end of November and {result.closing_cash} on 31 December, after loan repayments. Your lowest point this year was March ({result.months[2].closing_cash}), so plan for next spring.",
-      "follow_ups": ["How much do I owe on my loans?", "Am I profitable this year?"]
+      "follow_ups": [
+        "How much do I owe on my loans?",
+        "Am I profitable this year?"
+      ]
     },
     {
       "id": "profit",
       "agent": "finance",
-      "match": ["profit", "surplus", "margin", "making money", "how am i doing", "how is the farm"],
+      "match": [
+        "profit",
+        "surplus",
+        "margin",
+        "making money",
+        "how am i doing",
+        "how is the farm"
+      ],
       "function": "pl.months",
       "show": "surplus_by_month",
       "text": "From January to September you made an Operating Surplus of {result.ytd.profit.net} on income of {result.ytd.revenue.total}, a {result.ytd.profit.margin_pct|pct} margin. Operating costs were {result.ytd.costs.total}. Loan repayments ({result.ytd.finance.loan_repayments}) are kept outside that surplus.",
-      "follow_ups": ["Will I have cash for the December feed bill?", "How much do I owe on my loans?"]
+      "follow_ups": [
+        "Will I have cash for the December feed bill?",
+        "How much do I owe on my loans?"
+      ]
     },
     {
       "id": "loans",
       "agent": "finance",
-      "match": ["loan", "repay", "debt", "owe", "interest"],
+      "match": [
+        "loan",
+        "repay",
+        "debt",
+        "owe",
+        "interest"
+      ],
       "function": "loan.schedule",
       "show": "loans",
       "text": "You owe {result.total_balance} across your two loans and repay {result.total_monthly_payment} a month in total. The machinery loan is {result.loans[1].repaid_pct|pct} repaid; total interest still to pay is {result.total_interest}.",
-      "follow_ups": ["Will I have cash for the December feed bill?"]
+      "follow_ups": [
+        "How much more could I borrow?",
+        "Will I have cash for the December feed bill?"
+      ]
     },
     {
       "id": "schemes",
       "agent": "schemes",
-      "match": ["scheme", "biss", "acres", "grant", "subsid"],
+      "match": [
+        "scheme",
+        "biss",
+        "acres",
+        "grant",
+        "subsid"
+      ],
       "unavailable": true
     }
   ]

@@ -12,6 +12,8 @@
   "opening_cash": 30000,
   "milking_cows": 100,
   "hectares": 60,
+  "household": { "drawings_per_year": 30000, "tax_per_year": 12000, "off_farm_income_per_year": 0 },
+  "new_loan_terms": { "annual_rate": 0.055, "term_months": 84, "min_cover": 1.25 },
   "months": [
     { "month": 1, "pl": { "milk_litres": 6000, "milk_price": 0.44, "loan_repayments": 1631.36 }, "cash": { "milk": 3200, "loan_principal_repayments": 1376.11, "interest_paid": 255.25, "household_drawings": 2500 },
       "lines": { "feed": 9000, "vet": 600, "labour": 2800, "fuel": 450, "electricity": 520, "repairs_maintenance": 400, "levies": 20 } },

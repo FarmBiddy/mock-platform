@@ -6,7 +6,7 @@ import { askBiddy } from "@/app/chat/actions";
 import { getChat, newId, saveChat, useChats } from "@/lib/chats";
 import ResultView from "./ResultView";
 
-const SUGGESTIONS = ["Will I have cash for the December feed bill?", "Am I profitable this year?", "How much do I owe on my loans?"];
+const SUGGESTIONS = ["Will I have cash for the December feed bill?", "Am I profitable this year?", "How much more could I borrow?"];
 const AGENT_LABELS = { finance: "Finance agent", schemes: "Schemes agent" };
 
 /** One chat with Biddy. State lives in the chat store; `initialQuestion` comes from the header box. */

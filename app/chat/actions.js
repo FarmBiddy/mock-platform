@@ -51,5 +51,6 @@ function toView(farm, { show, response }) {
   if (show === "cash_by_month") return { kind: show, data: cashChartData(farm, response.result.months) };
   if (show === "surplus_by_month") return { kind: show, data: surplusChartData(farm, response.result.months) };
   if (show === "loans") return { kind: show, loans: farm.loans };
+  if (show === "borrowing") return { kind: show };
   return null;
 }

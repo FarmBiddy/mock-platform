@@ -63,7 +63,7 @@ Farmer asks in "Ask Biddy" (new chat or an existing one)
 - `conversation.messages` is the chat so far (oldest first), without the new question.
 - `screen.card` is set when asked from a card (e.g. `"cash"`), `null` from the header or the chat page.
 - `inputs` are the engine request bodies exactly as the platform builds them (`lib/financials/farm.js`).
-  Today: `loan.schedule`, `pl.forecast`, `pl.months`, `kpi.summary`, `cf.forecast`, `cf.months`.
+  Today: `loan.schedule`, `pl.forecast`, `pl.months`, `kpi.summary`, `pl.compare`, `debt.capacity`, `cf.forecast`, `cf.months`.
   Months after `actual_through_month` are projections from the engine forecast (`pl.forecast` / `cf.forecast`) at market prices.
   Projected loan and milk-cheque lines depend on earlier results (loan.schedule → pl.months → cf.months); the
   platform sends them already filled in.
@@ -105,8 +105,7 @@ Farmer asks in "Ask Biddy" (new chat or an existing one)
 ```
 
 - `results`: engine envelopes the agent ran for this answer, unchanged. The chat renders each one with the
-  platform's existing component for `show` (`cash_by_month`, `surplus_by_month`, `month_statement`,
-  `expenses`, `loans`); unknown `show` values fall back to text only.
+  platform's existing component for `show` (`cash_by_month`, `surplus_by_month`, `loans`, `borrowing`); unknown `show` values fall back to text only.
 - `figures_used`: every number in `text` points at `results[result]` + `path`, so tests can check that no figure
   was invented.
 - `needs_input`: the platform asks the farmer (in the chat), stores the value on the farm data at
