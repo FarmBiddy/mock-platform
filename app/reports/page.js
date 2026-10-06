@@ -25,9 +25,11 @@ const fmt = (v, d = 1) => v.toLocaleString("en-IE", { maximumFractionDigits: d }
 /** One farm file → report.bank / report.advisor / report.accountant. Every figure is the engine's. */
 export default async function ReportsPage({ searchParams }) {
   const { r } = await searchParams;
-  const kind = REPORTS[r] ? r : "bank";
+  const { pro, role } = await getViewer();
+  // The advisor works from the advisor report: first in the list and the default.
+  const order = role === "advisor" ? ["advisor", "bank", "accountant"] : Object.keys(REPORTS);
+  const kind = REPORTS[r] ? r : order[0];
   const farm = await loadFarm();
-  const { pro } = await getViewer();
   const locked = kind === "bank" && !pro; // the bank report is Pro
 
   const { inputs, cf, cap } = await runFarm(farm);
@@ -58,14 +60,14 @@ export default async function ReportsPage({ searchParams }) {
       </div>
 
       <nav aria-label="Report type" className="flex gap-2 print:hidden">
-        {Object.entries(REPORTS).map(([key, { label }]) => (
+        {order.map((key) => (
           <Link
             key={key}
             href={`/reports?r=${key}`}
             aria-current={key === kind ? "page" : undefined}
             className={`rounded-full px-3 py-1.5 text-sm ring-1 ${key === kind ? "bg-emerald-800 text-white ring-emerald-800" : "bg-white text-stone-700 ring-stone-300 hover:bg-stone-50"}`}
           >
-            {label}
+            {REPORTS[key].label}
           </Link>
         ))}
       </nav>

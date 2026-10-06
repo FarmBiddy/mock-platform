@@ -1,6 +1,6 @@
 // Self-check for farmer edits (untrusted cookie / form input): part of `npm run check`.
 import assert from "node:assert/strict";
-import { applyEdits, cleanEdits, valueAtPath } from "../lib/farm-edits-core.js";
+import { applyEdits, cleanEdits, ownerOf, valueAtPath } from "../lib/farm-edits-core.js";
 
 // whitelist + validation
 assert.deepEqual(
@@ -31,5 +31,13 @@ assert.equal(farm.market.milk_price, 0.46);
 assert.equal(base.months[0].pl.milk_price, 0.5, "base must not change");
 assert.equal(valueAtPath(base, "months.9.lines.feed"), 5500);
 assert.equal(({}).polluted, undefined);
+
+
+// who edits what: farmer records vs advisor assumptions
+assert.equal(ownerOf("months.9.lines.feed"), "owner");
+assert.equal(ownerOf("opening_cash"), "owner");
+assert.equal(ownerOf("market.milk_price"), "advisor");
+assert.equal(ownerOf("new_loan_terms.min_cover"), "advisor");
+assert.equal(ownerOf("market.milk_price.x"), "owner"); // not an assumption path (and not whitelisted)
 
 console.log("farm edits ok");

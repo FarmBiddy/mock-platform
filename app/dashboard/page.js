@@ -6,6 +6,8 @@ import { Card } from "@/components/ui";
 import { attention } from "@/lib/financials/attention";
 import { runFarm } from "@/lib/financials/farm";
 import { ADVISOR, getViewer } from "@/lib/session";
+import { NOTE_MAX, readNotes } from "@/lib/notes";
+import { saveNote } from "@/app/session-actions";
 
 export const metadata = { title: "Dashboard · FarmBiddy" };
 
@@ -14,6 +16,7 @@ const QUESTIONS = ["Will I have cash for the December feed bill?", "Am I profita
 export default async function DashboardPage() {
   const farm = await loadFarm();
   const { role, pro } = await getViewer();
+  const note = role === "advisor" ? ((await readNotes())[farm.profile.id] ?? "") : null;
   const results = await runFarm(farm);
   const items = attention(farm, results);
   const today = new Date();
@@ -84,6 +87,24 @@ export default async function DashboardPage() {
         </Card>
         <EventsCard data={farm.events} />
       </div>
+
+      {note != null && (
+        <Card title={`Your notes on ${farm.profile.farm_name}`} subtitle={`Only you see these — not ${farm.profile.name.split(" ")[0]}.`}>
+          {/* key: remount after saving so the textarea shows the stored note */}
+          <form key={note} action={saveNote} className="space-y-2">
+            <textarea
+              name="note"
+              defaultValue={note}
+              maxLength={NOTE_MAX}
+              rows={4}
+              placeholder="e.g. Talk about the parlour loan at the November visit; check the feed contract."
+              aria-label="Notes"
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
+            <button className="rounded-full bg-emerald-800 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-900">Save note</button>
+          </form>
+        </Card>
+      )}
 
       <div className="flex flex-wrap gap-3 text-sm">
         <Link href="/farm-financials" className="rounded-xl bg-white px-4 py-3 font-medium shadow-sm ring-1 ring-stone-200 hover:bg-stone-50">

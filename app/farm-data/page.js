@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card } from "@/components/ui";
-import { loadFarm, readEdits } from "@/lib/farm-edits";
+import { loadFarm, ownerOf, readEdits } from "@/lib/farm-edits";
+import { ADVISOR, getViewer } from "@/lib/session";
 import { forecastMilkPrice } from "@/lib/financials/farm";
 import { monthLabel } from "@/lib/format/date";
 import { resetFarmData, saveFarmData } from "./actions";
@@ -19,7 +20,8 @@ const MONTH_FIELDS = [
   ["lines.cattle_sales", "Cattle sales", "€", "1"],
 ];
 
-function Field({ name, label, unit, step = "1", value, edited, hint, optional, min = "0" }) {
+/** `locked`: why this role can't change the field (the other role owns it); shown instead of the hint. */
+function Field({ name, label, unit, step = "1", value, edited, hint, optional, min = "0", locked }) {
   return (
     <label className="block text-sm">
       <span className="flex items-center gap-2 text-stone-700">
@@ -32,10 +34,11 @@ function Field({ name, label, unit, step = "1", value, edited, hint, optional, m
         step={step}
         min={min}
         required={!optional}
+        disabled={!!locked}
         defaultValue={value ?? ""}
-        className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 tabular-nums"
+        className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 tabular-nums disabled:bg-stone-100 disabled:text-stone-500"
       />
-      {hint && <span className="mt-0.5 block text-xs text-stone-500">{hint}</span>}
+      {(locked || hint) && <span className="mt-0.5 block text-xs text-stone-500">{locked ? `🔒 ${locked}` : hint}</span>}
     </label>
   );
 }
@@ -48,6 +51,9 @@ export default async function FarmDataPage({ searchParams }) {
   const { m, saved, reset } = await searchParams;
   const farm = await loadFarm();
   const edits = await readEdits(farm.profile.id);
+  const { role } = await getViewer();
+  const lock = (path) => (ownerOf(path) === role ? null : role === "owner" ? `Set by ${ADVISOR.name}, your advisor` : `${farm.profile.name}'s record`);
+  const ownEdits = Object.keys(edits).filter((p) => ownerOf(p) === role).length;
   const actualMonths = farm.months.map((x) => x.month);
   const month = actualMonths.includes(Number(m)) ? Number(m) : farm.actual_through_month;
   const record = farm.months.find((x) => x.month === month);
@@ -60,11 +66,12 @@ export default async function FarmDataPage({ searchParams }) {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Farm data</h1>
           <p className="text-sm text-stone-500">
-            The numbers FarmBiddy holds for {farm.profile.farm_name}. Change any of them and every page, report and Biddy answer is
-            recalculated by the Financial Engine.
+            The numbers FarmBiddy holds for {farm.profile.farm_name}.{" "}
+            {role === "owner" ? "You keep the records; your advisor sets the forecast assumptions." : "The farmer keeps the records; you set the forecast assumptions."} Every
+            change is recalculated by the Financial Engine on every page, report and Biddy answer.
           </p>
         </div>
-        {farm.editCount > 0 && (
+        {ownEdits > 0 && (
           <form action={resetFarmData}>
             <button className="rounded-lg px-3 py-1.5 text-sm text-stone-700 ring-1 ring-stone-300 hover:bg-stone-50">Reset to demo data</button>
           </form>
@@ -91,14 +98,15 @@ export default async function FarmDataPage({ searchParams }) {
 
         <Card title="Farm" subtitle="Leave a field empty if you don’t know it: Biddy will ask for it.">
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field name="milking_cows" label="Milking cows" unit="cows" value={farm.milking_cows} edited={"milking_cows" in edits} optional />
-            <Field name="hectares" label="Farmed area" unit="hectares" step="0.1" value={farm.hectares} edited={"hectares" in edits} />
+            <Field name="milking_cows" label="Milking cows" unit="cows" value={farm.milking_cows} edited={"milking_cows" in edits} optional locked={lock("milking_cows")} />
+            <Field name="hectares" label="Farmed area" unit="hectares" step="0.1" value={farm.hectares} edited={"hectares" in edits} locked={lock("hectares")} />
             <Field
               name="opening_cash"
               label={`Bank balance on 1 Jan ${farm.year}`}
               unit="€ (negative = overdraft)"
               value={farm.opening_cash}
               edited={"opening_cash" in edits}
+              locked={lock("opening_cash")}
               optional
               min={undefined}
             />
@@ -114,6 +122,7 @@ export default async function FarmDataPage({ searchParams }) {
               step="0.001"
               value={forecastMilkPrice(farm, firstForecast)}
               edited={"market.milk_price" in edits}
+              locked={lock("market.milk_price")}
             />
           </div>
         </Card>
@@ -142,6 +151,7 @@ export default async function FarmDataPage({ searchParams }) {
                 step={step}
                 value={valueOf(path) ?? 0}
                 edited={`months.${month}.${path}` in edits}
+                locked={lock(`months.${month}.${path}`)}
               />
             ))}
           </div>
@@ -157,8 +167,9 @@ export default async function FarmDataPage({ searchParams }) {
               step="0.01"
               value={farm.new_loan_terms?.annual_rate == null ? null : +(farm.new_loan_terms.annual_rate * 100).toFixed(4)}
               edited={"new_loan_terms.annual_rate" in edits}
+              locked={lock("new_loan_terms.annual_rate")}
             />
-            <Field name="new_loan_terms.term_months" label="Term" unit="months" value={farm.new_loan_terms?.term_months} edited={"new_loan_terms.term_months" in edits} />
+            <Field name="new_loan_terms.term_months" label="Term" unit="months" value={farm.new_loan_terms?.term_months} edited={"new_loan_terms.term_months" in edits} locked={lock("new_loan_terms.term_months")} />
             <Field
               name="new_loan_terms.min_cover"
               label="Lender’s minimum cover"
@@ -167,6 +178,7 @@ export default async function FarmDataPage({ searchParams }) {
               min="1"
               value={farm.new_loan_terms?.min_cover}
               edited={"new_loan_terms.min_cover" in edits}
+              locked={lock("new_loan_terms.min_cover")}
             />
           </div>
         </Card>

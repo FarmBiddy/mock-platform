@@ -2,7 +2,8 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { ADVISOR, CLIENT_COOKIE, ROLE_COOKIE, TIER_COOKIE } from "@/lib/session";
+import { NOTES_COOKIE, NOTE_MAX, readNotes } from "@/lib/notes";
+import { ADVISOR, CLIENT_COOKIE, ROLE_COOKIE, TIER_COOKIE, getViewer } from "@/lib/session";
 
 const OPTS = { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 30 };
 
@@ -30,4 +31,12 @@ export async function openClient(formData) {
 /** Demo plan switch for the owner. No redirect: the current page re-renders with the new plan. */
 export async function setTier(formData) {
   (await cookies()).set(TIER_COOKIE, formData.get("tier") === "pro" ? "pro" : "free", OPTS);
+}
+
+/** The advisor's private note on the client that is open. */
+export async function saveNote(formData) {
+  const { role, farmId } = await getViewer();
+  if (role !== "advisor" || !farmId) return;
+  const notes = { ...(await readNotes()), [farmId]: String(formData.get("note") ?? "").trim().slice(0, NOTE_MAX) };
+  (await cookies()).set(NOTES_COOKIE, JSON.stringify(notes), OPTS);
 }

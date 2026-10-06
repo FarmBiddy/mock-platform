@@ -28,7 +28,7 @@ export const metadata = { title: "Farm Financials · FarmBiddy" };
 export default async function FarmFinancialsPage({ searchParams }) {
   const params = await searchParams;
   const farm = await loadFarm();
-  const { pro } = await getViewer();
+  const { pro, role } = await getViewer();
 
   const { inputs, loans, plf, pl, kpi, plc, cap, cff, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
 
@@ -98,7 +98,8 @@ export default async function FarmFinancialsPage({ searchParams }) {
                   <Stat label="Projected 31 Dec" value={formatCurrency(r.closing_cash, r.currency)} />
                 </div>
                 <CashChart data={cashChartData(farm, r.months)} />
-                <details className="mt-4 text-sm">
+                {/* The advisor works in the detail: month by month starts open. */}
+                <details open={role === "advisor"} className="mt-4 text-sm">
                   <summary className="cursor-pointer text-emerald-800 hover:underline">Show month by month</summary>
                   <div className="mt-3 overflow-x-auto">
                     <table className="w-full min-w-[32rem] tabular-nums">

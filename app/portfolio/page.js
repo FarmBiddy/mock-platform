@@ -11,6 +11,7 @@ import { monthLabel } from "@/lib/format/date";
 import { formatMarginPct } from "@/lib/format/percent";
 import { ADVISOR, getViewer } from "@/lib/session";
 import { readShares } from "@/lib/shared";
+import { readNotes } from "@/lib/notes";
 
 export const metadata = { title: "Portfolio · FarmBiddy" };
 
@@ -43,6 +44,7 @@ export default async function PortfolioPage() {
   if (role !== "advisor") redirect("/dashboard");
   const rows = (await Promise.all(ADVISOR.clients.map(clientRow))).sort(byRisk);
   const shares = await readShares();
+  const notes = await readNotes();
   const farmOf = (id) => rows.find((r) => r.farm.profile.id === id)?.farm.profile;
 
   return (
@@ -114,6 +116,7 @@ export default async function PortfolioPage() {
                       {farm.editCount > 0 && " · edited"}
                       {shares.some((sh) => sh.farm === farm.profile.id) && <span className="ml-1 rounded-full bg-sky-100 px-1.5 text-sky-800">shared</span>}
                     </p>
+                    {notes[farm.profile.id] && <p className="mt-1 line-clamp-2 max-w-56 text-xs text-stone-600">📝 {notes[farm.profile.id]}</p>}
                   </td>
                   <td className="py-3 pr-4 text-right tabular-nums">
                     {costPerLitre == null ? "—" : `${costPerLitre.toLocaleString("en-IE", { maximumFractionDigits: 1 })}c/L`}
