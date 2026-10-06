@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV } from "./nav";
+import { NAV, PORTFOLIO } from "./nav";
 import { useChats } from "@/lib/chats";
 
-export default function Sidebar() {
+export default function Sidebar({ advisor }) {
   const pathname = usePathname();
   const chats = useChats();
 
@@ -35,7 +35,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex flex-col gap-0.5">
-        {NAV.map(([label, href]) => {
+        {(advisor ? [PORTFOLIO, ...NAV] : NAV).map(([label, href]) => {
           const active = pathname === href;
           return (
             <Link

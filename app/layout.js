@@ -2,8 +2,10 @@ import { DM_Sans } from "next/font/google";
 import Sidebar from "@/components/shell/Sidebar";
 import MobileNav from "@/components/shell/MobileNav";
 import Link from "next/link";
+import ViewAs from "@/components/shell/ViewAs";
 import { getFarm } from "@/lib/financials/farm";
 import { readEdits } from "@/lib/farm-edits";
+import { OWNER_FARM, getViewer } from "@/lib/session";
 import "./globals.css";
 
 const sans = DM_Sans({ variable: "--font-sans", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
@@ -14,13 +16,14 @@ export const metadata = {
 };
 
 export default async function RootLayout({ children }) {
-  const { profile } = getFarm();
-  const edited = Object.keys(await readEdits()).length;
+  const { role, farmId } = await getViewer();
+  const edited = farmId ? Object.keys(await readEdits(farmId)).length : 0;
+  const client = role === "advisor" && farmId ? getFarm(farmId).profile : null;
 
   return (
     <html lang="en" className={`${sans.variable} h-full antialiased`}>
       <body className="flex min-h-full bg-[#eef1ec] font-[family-name:var(--font-sans)] text-stone-900">
-        <Sidebar />
+        <Sidebar advisor={role === "advisor"} />
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex items-center gap-3 print:hidden border-b border-stone-200 bg-white px-4 py-3 sm:gap-4 sm:px-6">
             <span className="text-lg font-semibold tracking-tight text-[#173a2b] lg:hidden">FarmBiddy</span>
@@ -47,19 +50,11 @@ export default async function RootLayout({ children }) {
               </svg>
               <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
             </button>
-            <div className="flex items-center gap-2">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-emerald-800 text-sm font-semibold text-white">
-                {profile.initials}
-              </span>
-              <div className="text-sm leading-tight max-sm:hidden">
-                <p className="font-medium">{profile.name}</p>
-                <p className="text-xs text-stone-500">{profile.farm_name}</p>
-              </div>
-            </div>
+            <ViewAs key={`${role}-${farmId}`} role={role} owner={getFarm(OWNER_FARM).profile} client={client} />
           </header>
           <main className="flex-1 pb-20 lg:pb-0">{children}</main>
         </div>
-        <MobileNav />
+        <MobileNav advisor={role === "advisor"} />
       </body>
     </html>
   );

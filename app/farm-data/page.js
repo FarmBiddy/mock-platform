@@ -47,7 +47,7 @@ function Field({ name, label, unit, step = "1", value, edited, hint, optional, m
 export default async function FarmDataPage({ searchParams }) {
   const { m, saved, reset } = await searchParams;
   const farm = await loadFarm();
-  const edits = await readEdits();
+  const edits = await readEdits(farm.profile.id);
   const actualMonths = farm.months.map((x) => x.month);
   const month = actualMonths.includes(Number(m)) ? Number(m) : farm.actual_through_month;
   const record = farm.months.find((x) => x.month === month);

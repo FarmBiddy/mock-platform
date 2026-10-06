@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { EDIT_COOKIE, cleanEdits, readEdits, ruleFor, valueAtPath } from "@/lib/farm-edits";
+import { cleanEdits, currentFarmId, editCookie, readEdits, ruleFor, valueAtPath } from "@/lib/farm-edits";
 import { forecastMilkPrice, getFarm } from "@/lib/financials/farm";
 
 /** Percent inputs in the form; stored as the engine's 0–1 ratio. */
@@ -13,8 +13,9 @@ const PERCENT = { "new_loan_terms.annual_rate_pct": "new_loan_terms.annual_rate"
  * an empty field (where allowed) becomes null so the engine asks for it.
  */
 export async function saveFarmData(formData) {
-  const base = getFarm();
-  const edits = await readEdits();
+  const farmId = await currentFarmId();
+  const base = getFarm(farmId);
+  const edits = await readEdits(farmId);
   for (const [name, raw] of formData.entries()) {
     const path = PERCENT[name] ?? name;
     const rule = ruleFor(path);
@@ -33,12 +34,12 @@ export async function saveFarmData(formData) {
     else edits[path] = value;
   }
   const clean = cleanEdits(edits);
-  (await cookies()).set(EDIT_COOKIE, JSON.stringify(clean), { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 30 });
+  (await cookies()).set(editCookie(farmId), JSON.stringify(clean), { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 30 });
   const month = Number(formData.get("_month"));
   redirect(`/farm-data?saved=1${month ? `&m=${month}` : ""}`);
 }
 
 export async function resetFarmData() {
-  (await cookies()).delete(EDIT_COOKIE);
+  (await cookies()).delete(editCookie(await currentFarmId()));
   redirect("/farm-data?reset=1");
 }

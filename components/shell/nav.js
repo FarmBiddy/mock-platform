@@ -1,3 +1,6 @@
+/** Advisor-only entry, shown first in the nav when viewing as the advisor. */
+export const PORTFOLIO = ["Portfolio", "/portfolio"];
+
 export const NAV = [
   ["Dashboard", "/dashboard"],
   ["Farm Financials", "/farm-financials"],
