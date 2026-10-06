@@ -10,7 +10,8 @@ import { WHAT_IF_PRESETS } from "@/lib/financials/whatIf";
  */
 export async function runWhatIf(ids) {
   const picked = WHAT_IF_PRESETS.filter((p) => Array.isArray(ids) && ids.includes(p.id));
-  const { inputs, cf } = await runFarm(getFarm());
+  const farm = getFarm();
+  const { inputs, cf } = await runFarm(farm);
   if (cf.status !== "ok") return cf;
-  return riskSensitivity(buildRiskInput(inputs, picked.map((p) => ({ name: p.label, ...p.shock }))));
+  return riskSensitivity(buildRiskInput(farm, inputs, picked.map((p) => ({ name: p.label, ...p.shock }))));
 }

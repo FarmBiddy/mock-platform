@@ -10,27 +10,40 @@ import { WHAT_IF_PRESETS } from "@/lib/financials/whatIf";
 const cents = (v) => `${v.toLocaleString("en-IE", { maximumFractionDigits: 1 })}c/L`;
 const times = (v) => (v == null ? "—" : `${v.toLocaleString("en-IE", { maximumFractionDigits: 1 })}×`);
 
-/** Break-even sentences for the base case, straight from the engine (null = not computable). */
+/** "Oct" (or "Oct 2027") for the engine's shocks_from period. */
+const fromLabel = (from) => (from ? monthLabel(from.month) : null);
+
+/**
+ * Break-even sentences for the base case, straight from the engine (null = not computable).
+ * With shocks_from, break-evens only look at the months from that point (ADR-0040).
+ */
 function BreakEvens({ result }) {
   const base = result.scenarios[0];
   const { surplus_milk_price_c: lossBelow, cash_milk_price_c: overdrawnBelow } = base.break_even;
   const price = result.milk_price_c;
+  const from = fromLabel(result.shocks_from);
+  const span = from ? `from ${from} to December` : "this year";
 
   return (
     <ul className="space-y-1 text-sm">
       <li>
-        You’re getting <strong>{cents(price)}</strong> on average this year.
+        Milk is {from ? "forecast" : "averaging"} at <strong>{cents(price)}</strong> {span}.
       </li>
-      {lossBelow != null && (
-        <li>
-          You’d make a <strong>loss below {cents(lossBelow)}</strong>.
-        </li>
-      )}
+      {lossBelow != null &&
+        (lossBelow > 0 ? (
+          <li>
+            You’d make a <strong>loss below {cents(lossBelow)}</strong>.
+          </li>
+        ) : (
+          <li>No milk price would put {from ? `${from}–Dec` : "this year"} into a loss.</li>
+        ))}
       {overdrawnBelow != null &&
-        (overdrawnBelow > price ? (
+        (overdrawnBelow <= 0 ? (
+          <li>No milk price would put you into overdraft {from ? "before the end of the year" : "this year"}.</li>
+        ) : overdrawnBelow > price ? (
           <li className="text-amber-900">
-            You go overdrawn at any realistic price (lowest {formatCurrency(base.lowest_cash.amount, result.currency)} in{" "}
-            {monthLabel(base.lowest_cash.period.month)}): that overdraft is seasonal, not price-driven.
+            Even at today’s price you go overdrawn (lowest {formatCurrency(base.lowest_cash.amount, result.currency)} in{" "}
+            {monthLabel(base.lowest_cash.period.month)}).
           </li>
         ) : (
           <li>
@@ -49,6 +62,7 @@ export default function WhatIfCard({ initial }) {
   const [picked, setPicked] = useState([]);
   const [response, setResponse] = useState(initial);
   const [pending, startTransition] = useTransition();
+  const from = response.status === "ok" ? fromLabel(response.result.shocks_from) : null;
 
   function toggle(id) {
     const next = picked.includes(id) ? picked.filter((p) => p !== id) : [...picked, id];
@@ -62,7 +76,11 @@ export default function WhatIfCard({ initial }) {
   return (
     <Card
       title="What if…?"
-      subtitle="Stress-test this year: each change is applied to every month of the year, actual and forecast."
+      subtitle={
+        response.status === "ok" && response.result.shocks_from
+          ? `Changes apply from ${fromLabel(response.result.shocks_from)} (forecast months); earlier months are actual. Surplus, debt cover and 31 Dec cash cover the whole year.`
+          : "Stress-test this year: each change is applied to every month of the year."
+      }
       badge={<Badge>risk.sensitivity</Badge>}
     >
       {response.status !== "ok" ? (
@@ -93,8 +111,8 @@ export default function WhatIfCard({ initial }) {
                   <th className="py-1 font-medium">Scenario</th>
                   <th className="py-1 text-right font-medium">Surplus (full year)</th>
                   <th className="py-1 text-right font-medium">Cash 31 Dec</th>
-                  <th className="py-1 text-right font-medium">Lowest cash</th>
-                  <th className="py-1 text-right font-medium">Months overdrawn</th>
+                  <th className="py-1 text-right font-medium">Lowest cash{from ? ` (from ${from})` : ""}</th>
+                  <th className="py-1 text-right font-medium">Months overdrawn{from ? ` (from ${from})` : ""}</th>
                   <th className="py-1 text-right font-medium">Debt cover</th>
                 </tr>
               </thead>

@@ -39,7 +39,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
   const forecastIssue = [plf, cff].find((r) => r && r.status !== "ok");
   const vs = plc?.status === "ok" ? plc.result : null;
   // Base case only on load; the panel re-runs with the scenarios the farmer ticks.
-  const risk = cf.status === "ok" ? await riskSensitivity(buildRiskInput(inputs)) : null;
+  const risk = cf.status === "ok" ? await riskSensitivity(buildRiskInput(farm, inputs)) : null;
   const vsLabel = `vs Jan–${asOf} ${farm.year - 1}`;
   const tag = (m) => ({ label: monthLabel(m.period.month), projected: isProjected(farm, m.period.month) });
 
