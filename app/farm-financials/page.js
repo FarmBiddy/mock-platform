@@ -6,6 +6,7 @@ import Breakdown, { StackedBreakdown, expenseRows, incomeRows } from "@/componen
 import { EventsCard, LoansCard, Stat, SupplierDebtCard } from "@/components/financials/PlatformCards";
 import StatusTiles from "@/components/financials/StatusTiles";
 import KpiCard from "@/components/financials/KpiCard";
+import Change from "@/components/financials/Change";
 import SourcesToggle from "@/components/SourcesToggle";
 import { getFarm, isProjected, runFarm } from "@/lib/financials/farm";
 import { cashChartData, surplusChartData } from "@/lib/financials/views";
@@ -22,7 +23,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
   const params = await searchParams;
   const farm = getFarm();
 
-  const { inputs, loans, plf, pl, kpi, cff, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
+  const { inputs, loans, plf, pl, kpi, plc, cff, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
 
   const asOf = monthLabel(farm.actual_through_month);
   // Say which month / loan a nested needs_input path points at, from the request that was sent.
@@ -33,6 +34,8 @@ export default async function FarmFinancialsPage({ searchParams }) {
     return item?.month ? `${monthLabel(item.month)}${item.year !== farm.year ? ` ${item.year}` : ""}` : null;
   };
   const forecastIssue = [plf, cff].find((r) => r && r.status !== "ok");
+  const vs = plc?.status === "ok" ? plc.result : null;
+  const vsLabel = `vs Jan–${asOf} ${farm.year - 1}`;
   const tag = (m) => ({ label: monthLabel(m.period.month), projected: isProjected(farm, m.period.month) });
 
   return (
@@ -53,7 +56,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
         </p>
       )}
 
-      <StatusTiles pl={pl} cf={cf} loans={loans} kpi={kpi} farm={farm} />
+      <StatusTiles pl={pl} cf={cf} loans={loans} kpi={kpi} plc={plc} farm={farm} />
 
       <EngineGate response={pl} params={params} describePath={describePath}>
         {({ months }) => (
@@ -140,14 +143,32 @@ export default async function FarmFinancialsPage({ searchParams }) {
         <div className="space-y-6">
           {pl.status === "ok" && (
             <Card title="Income YTD" subtitle={`Jan–${asOf}`} badge={<Badge>pl.months · ytd</Badge>}>
-              <StackedBreakdown rows={incomeRows(pl.result.ytd.revenue)} total={pl.result.ytd.revenue.total} currency={pl.result.currency} />
+              <StackedBreakdown
+                rows={incomeRows(pl.result.ytd.revenue)}
+                total={pl.result.ytd.revenue.total}
+                currency={pl.result.currency}
+                change={vs && <Change leaf={vs.revenue.total} label={vsLabel} />}
+              />
+              {vs && vs.revenue.milk.change !== 0 && (
+                <p className="mt-3 text-xs text-stone-500">
+                  Milk income {vs.revenue.milk.change > 0 ? "up" : "down"} {formatCurrency(Math.abs(vs.revenue.milk.change))}: {formatCurrency(vs.milk.volume_effect)} from{" "}
+                  {vs.milk.litres.change >= 0 ? "more" : "fewer"} litres, {formatCurrency(vs.milk.price_effect)} from{" "}
+                  {vs.milk.price_c.change >= 0 ? "a better" : "a lower"} price.
+                </p>
+              )}
             </Card>
           )}
           <LoansCard response={loans} loans={farm.loans} params={params} describePath={describePath} />
         </div>
         {pl.status === "ok" && (
           <Card title="Expenses YTD" subtitle={`Operating costs, Jan–${asOf}. Loan repayments excluded.`} badge={<Badge>pl.months · ytd</Badge>}>
-            <Breakdown rows={expenseRows(pl.result.ytd.costs.lines)} total={pl.result.ytd.costs.total} color={COLORS.costs} currency={pl.result.currency} />
+            <Breakdown
+              rows={expenseRows(pl.result.ytd.costs.lines)}
+              total={pl.result.ytd.costs.total}
+              color={COLORS.costs}
+              currency={pl.result.currency}
+              change={vs && <Change leaf={vs.costs.total} label={vsLabel} upIsGood={false} />}
+            />
           </Card>
         )}
       </div>

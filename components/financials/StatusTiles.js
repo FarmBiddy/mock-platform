@@ -1,6 +1,7 @@
 import { formatCurrency } from "@/lib/format/currency";
 import { formatMarginPct } from "@/lib/format/percent";
 import { monthLabel } from "@/lib/format/date";
+import Change from "./Change";
 
 const TONES = {
   good: { icon: "✓", ring: "ring-emerald-200", chip: "bg-emerald-100 text-emerald-800" },
@@ -17,12 +18,13 @@ const TONES = {
 const DSCR_OK = 1.25;
 const times = (v) => `${v.toLocaleString("en-IE", { maximumFractionDigits: 1 })}×`;
 
-export default function StatusTiles({ pl, cf, loans, kpi, farm }) {
+export default function StatusTiles({ pl, cf, loans, kpi, plc, farm }) {
   const asOf = monthLabel(farm.actual_through_month);
   const ytd = pl.status === "ok" ? pl.result.ytd : null;
   const cash = cf.status === "ok" ? cf.result : null;
   const loan = loans.status === "ok" ? loans.result : null;
   const dscr = kpi?.status === "ok" ? kpi.result.dscr : null;
+  const vsSurplus = plc?.status === "ok" ? plc.result.profit.net : null;
 
   const minClosing = (ms) => (ms.length ? ms.reduce((a, b) => (b.closing_cash < a.closing_cash ? b : a)) : null);
   const lowest = minClosing(cash?.months.filter((m) => m.period.month > farm.actual_through_month) ?? []);
@@ -38,6 +40,7 @@ export default function StatusTiles({ pl, cf, loans, kpi, farm }) {
           answer: ytd.profit.net > 0 ? "Yes, this year so far" : "Not yet this year",
           value: formatCurrency(ytd.profit.net, ytd.currency),
           detail: `Operating Surplus Jan–${asOf} · ${formatMarginPct(ytd.profit.margin_pct, 0)} margin`,
+          change: vsSurplus && <Change leaf={vsSurplus} label={`vs same months ${farm.year - 1}`} />,
         }
       : { question: "Am I profitable?", tone: "none", answer: "Needs your figures", detail: "See below" },
     lowest
@@ -82,6 +85,7 @@ export default function StatusTiles({ pl, cf, loans, kpi, farm }) {
             </p>
             {t.value && <p className="mt-2 text-xl font-semibold tabular-nums sm:mt-3 sm:text-2xl">{t.value}</p>}
             <p className="mt-1 text-xs text-stone-500">{t.detail}</p>
+            {t.change && <div className="mt-1">{t.change}</div>}
             {t.note && <p className="mt-2 text-xs font-medium text-amber-800">{t.note}</p>}
           </section>
         );

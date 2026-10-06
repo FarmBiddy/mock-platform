@@ -34,12 +34,13 @@ export function expenseRows(lines) {
 }
 
 /** Ranked horizontal bars; the total shown is the engine-published total. */
-export default function Breakdown({ rows, total, color = COLORS.income, currency }) {
+export default function Breakdown({ rows, total, color = COLORS.income, currency, change = null }) {
   const visible = rows.filter((r) => r.amount > 0).sort((a, b) => b.amount - a.amount);
 
   return (
     <div>
       <p className="text-2xl font-semibold tabular-nums">{formatCurrency(total, currency)}</p>
+      {change}
       <ul className="mt-4 space-y-3">
         {visible.map((r) => {
           const head = (
@@ -86,13 +87,14 @@ export default function Breakdown({ rows, total, color = COLORS.income, currency
 const STACK_COLORS = ["#2f7d4f", "#3b5fc0", "#c0508a"];
 
 /** Few rows (e.g. income sources): one stacked bar + labelled legend. Total is the engine's. */
-export function StackedBreakdown({ rows, total, currency }) {
+export function StackedBreakdown({ rows, total, currency, change = null }) {
   const visible = rows.filter((r) => r.amount > 0).sort((a, b) => b.amount - a.amount);
   const color = (i) => STACK_COLORS[Math.min(i, STACK_COLORS.length - 1)];
 
   return (
     <div>
       <p className="text-2xl font-semibold tabular-nums">{formatCurrency(total, currency)}</p>
+      {change}
       <div className="mt-4 flex h-3 gap-0.5 overflow-hidden rounded-full" role="img" aria-label="Income by source">
         {visible.map((r, i) => (
           <div key={r.label} style={{ width: `${(r.amount / total) * 100}%`, background: color(i) }} title={r.label} />
