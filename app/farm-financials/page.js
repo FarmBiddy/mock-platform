@@ -7,8 +7,10 @@ import { EventsCard, LoansCard, Stat, SupplierDebtCard } from "@/components/fina
 import StatusTiles from "@/components/financials/StatusTiles";
 import KpiCard from "@/components/financials/KpiCard";
 import Change from "@/components/financials/Change";
+import WhatIfCard from "@/components/financials/WhatIfCard";
 import SourcesToggle from "@/components/SourcesToggle";
-import { getFarm, isProjected, runFarm } from "@/lib/financials/farm";
+import { buildRiskInput, getFarm, isProjected, runFarm } from "@/lib/financials/farm";
+import { riskSensitivity } from "@/lib/financial-engine/client";
 import { cashChartData, surplusChartData } from "@/lib/financials/views";
 import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
@@ -35,6 +37,8 @@ export default async function FarmFinancialsPage({ searchParams }) {
   };
   const forecastIssue = [plf, cff].find((r) => r && r.status !== "ok");
   const vs = plc?.status === "ok" ? plc.result : null;
+  // Base case only on load; the panel re-runs with the scenarios the farmer ticks.
+  const risk = cf.status === "ok" ? await riskSensitivity(buildRiskInput(inputs)) : null;
   const vsLabel = `vs Jan–${asOf} ${farm.year - 1}`;
   const tag = (m) => ({ label: monthLabel(m.period.month), projected: isProjected(farm, m.period.month) });
 
@@ -137,6 +141,8 @@ export default async function FarmFinancialsPage({ searchParams }) {
       </Card>
 
       {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} />}
+
+      {risk && <WhatIfCard initial={risk} />}
 
       {/* Two balanced columns: short income + loans on the left, the long expense list on the right. */}
       <div className="grid items-start gap-6 lg:grid-cols-2">
