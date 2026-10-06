@@ -3,7 +3,8 @@
 Standalone Next.js prototype of the FarmBiddy farmer app. Demo user Joe Bloggs
 (dairy): monthly farm data lives in the platform, is sent to the external
 **FarmBiddy Financial Engine** over HTTP/JSON, and Farm Financials shows the
-results (monthly P&L, YTD breakdowns, cash balance, loans, suppliers, events).
+results (monthly P&L and forecast, cash, KPIs, vs last year, what-if, loans, borrowing
+capacity), plus bank / advisor / accountant reports and Ask Biddy chats.
 
 This project contains **no financial calculation logic**. All P&L maths live in
 the Financial Engine.
@@ -12,8 +13,8 @@ the Financial Engine.
 
 - Node.js 22+ (or current LTS)
 - npm
-- Financial Engine running separately on `http://127.0.0.1:8000`
-  (e.g. `python run_server.py` in that repository)
+- Python with the engine's requirements (`py` launcher on Windows)
+- The Financial Engine repo next to this one (`../REMOTE-FUNCTIONS`)
 
 ## Setup
 
@@ -29,6 +30,25 @@ NEXT_PUBLIC_FINANCIAL_ENGINE_URL=http://127.0.0.1:8000
 ```
 
 ## Run
+
+The engine runs from a separate checkout of its `main` (a git worktree at `../engine-main`), so
+work in progress in `../REMOTE-FUNCTIONS` never affects the mock. Once:
+
+```bash
+git -C ../REMOTE-FUNCTIONS worktree add --detach ../engine-main origin/main
+```
+
+To pick up a newer engine main later:
+
+```bash
+git -C ../engine-main fetch origin && git -C ../engine-main checkout --detach origin/main
+```
+
+Start both (or use the `engine` and `web` entries in `.claude/launch.json`):
+
+```bash
+py -m uvicorn --app-dir ../engine-main api.app:app --host 127.0.0.1 --port 8000
+```
 
 ```bash
 npm run dev
