@@ -16,7 +16,7 @@ export const metadata = {
 };
 
 export default async function RootLayout({ children }) {
-  const { role, farmId } = await getViewer();
+  const { role, farmId, tier } = await getViewer();
   const edited = farmId ? Object.keys(await readEdits(farmId)).length : 0;
   const client = role === "advisor" && farmId ? getFarm(farmId).profile : null;
 
@@ -50,7 +50,7 @@ export default async function RootLayout({ children }) {
               </svg>
               <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
             </button>
-            <ViewAs key={`${role}-${farmId}`} role={role} owner={getFarm(OWNER_FARM).profile} client={client} />
+            <ViewAs key={`${role}-${farmId}-${tier}`} role={role} tier={tier} owner={getFarm(OWNER_FARM).profile} client={client} />
           </header>
           <main className="flex-1 pb-20 lg:pb-0">{children}</main>
         </div>

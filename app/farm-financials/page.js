@@ -11,6 +11,8 @@ import Change from "@/components/financials/Change";
 import WhatIfCard from "@/components/financials/WhatIfCard";
 import BorrowCard from "@/components/financials/BorrowCard";
 import SourcesToggle from "@/components/SourcesToggle";
+import ProLock from "@/components/ProLock";
+import { getViewer } from "@/lib/session";
 import { buildRiskInput, isProjected, runFarm } from "@/lib/financials/farm";
 import { riskSensitivity } from "@/lib/financial-engine/client";
 import { cashChartData, surplusChartData } from "@/lib/financials/views";
@@ -26,6 +28,7 @@ export const metadata = { title: "Farm Financials · FarmBiddy" };
 export default async function FarmFinancialsPage({ searchParams }) {
   const params = await searchParams;
   const farm = await loadFarm();
+  const { pro } = await getViewer();
 
   const { inputs, loans, plf, pl, kpi, plc, cap, cff, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
 
@@ -38,7 +41,8 @@ export default async function FarmFinancialsPage({ searchParams }) {
     return item?.month ? `${monthLabel(item.month)}${item.year !== farm.year ? ` ${item.year}` : ""}` : null;
   };
   const forecastIssue = [plf, cff].find((r) => r && r.status !== "ok");
-  const vs = plc?.status === "ok" ? plc.result : null;
+  // This year vs last is Pro.
+  const vs = pro && plc?.status === "ok" ? plc.result : null;
   // Base case only on load; the panel re-runs with the scenarios the farmer ticks.
   const risk = cf.status === "ok" ? await riskSensitivity(buildRiskInput(farm, inputs)) : null;
   const vsLabel = `vs Jan–${asOf} ${farm.year - 1}`;
@@ -62,7 +66,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
         </p>
       )}
 
-      <StatusTiles pl={pl} cf={cf} loans={loans} kpi={kpi} plc={plc} farm={farm} />
+      <StatusTiles pl={pl} cf={cf} loans={loans} kpi={kpi} plc={pro ? plc : null} farm={farm} />
 
       <EngineGate response={pl} params={params} describePath={describePath}>
         {({ months }) => (
@@ -144,7 +148,11 @@ export default async function FarmFinancialsPage({ searchParams }) {
 
       {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} />}
 
-      {risk && <WhatIfCard initial={risk} />}
+      {risk && (
+        <ProLock pro={pro} title="What if milk drops or feed goes up?" value="Test price and cost shocks on your own cash and surplus before they happen.">
+          <WhatIfCard initial={risk} />
+        </ProLock>
+      )}
 
       {/* Two balanced columns: income + loans on the left, expenses + borrowing capacity on the right. */}
       <div className="grid items-start gap-6 lg:grid-cols-2">
@@ -180,7 +188,9 @@ export default async function FarmFinancialsPage({ searchParams }) {
               />
             </Card>
           )}
-          <BorrowCard response={cap} params={params} describePath={describePath} />
+          <ProLock pro={pro} title="How much more could you borrow?" value="The loan your surplus can carry at the bank’s cover, worked out before you ask.">
+            <BorrowCard response={cap} params={params} describePath={describePath} />
+          </ProLock>
         </div>
       </div>
 

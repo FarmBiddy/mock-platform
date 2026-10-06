@@ -13,7 +13,7 @@ const QUESTIONS = ["Will I have cash for the December feed bill?", "Am I profita
 
 export default async function DashboardPage() {
   const farm = await loadFarm();
-  const { role } = await getViewer();
+  const { role, pro } = await getViewer();
   const results = await runFarm(farm);
   const items = attention(farm, results);
   const today = new Date();
@@ -53,7 +53,7 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      <StatusTiles pl={results.pl} cf={results.cf} loans={results.loans} kpi={results.kpi} plc={results.plc} farm={farm} />
+      <StatusTiles pl={results.pl} cf={results.cf} loans={results.loans} kpi={results.kpi} plc={pro ? results.plc : null} farm={farm} />
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card title="Needs your attention">

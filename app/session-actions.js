@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { ADVISOR, CLIENT_COOKIE, ROLE_COOKIE } from "@/lib/session";
+import { ADVISOR, CLIENT_COOKIE, ROLE_COOKIE, TIER_COOKIE } from "@/lib/session";
 
 const OPTS = { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 30 };
 
@@ -25,4 +25,9 @@ export async function openClient(formData) {
   }
   jar.set(CLIENT_COOKIE, farm, OPTS);
   redirect("/dashboard");
+}
+
+/** Demo plan switch for the owner. No redirect: the current page re-renders with the new plan. */
+export async function setTier(formData) {
+  (await cookies()).set(TIER_COOKIE, formData.get("tier") === "pro" ? "pro" : "free", OPTS);
 }

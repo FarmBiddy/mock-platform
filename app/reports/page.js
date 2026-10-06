@@ -6,6 +6,8 @@ import { WHAT_IF_PRESETS } from "@/lib/financials/whatIf";
 import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
 import PrintButton from "@/components/reports/PrintButton";
+import ProLock from "@/components/ProLock";
+import { getViewer } from "@/lib/session";
 import {
   Capacity, Cash, CashFlow, Comparison, FixedAssets, Headline, Kpis, Loans, NetProfit, ProfitAndLoss, Section, Sensitivity, BalanceSheet, period,
 } from "@/components/reports/Sections";
@@ -25,6 +27,8 @@ export default async function ReportsPage({ searchParams }) {
   const { r } = await searchParams;
   const kind = REPORTS[r] ? r : "bank";
   const farm = await loadFarm();
+  const { pro } = await getViewer();
+  const locked = kind === "bank" && !pro; // the bank report is Pro
 
   const { inputs, cf, cap } = await runFarm(farm);
   // Borrowing capacity over the full year (actual + forecast), the same debt.capacity run as Farm Financials,
@@ -50,7 +54,7 @@ export default async function ReportsPage({ searchParams }) {
             {rep && ` · ${period(rep.period)} · prepared ${monthLabel(rep.as_of.month)} ${rep.as_of.year}`}
           </p>
         </div>
-        <PrintButton />
+        {!locked && <PrintButton />}
       </div>
 
       <nav aria-label="Report type" className="flex gap-2 print:hidden">
@@ -76,23 +80,25 @@ export default async function ReportsPage({ searchParams }) {
           </p>
         </Section>
       ) : kind === "bank" ? (
-        <>
-          <Headline
-            items={[
-              ["Net profit before tax", formatCurrency(rep.profit.net_profit_before_tax), `${fmt(rep.profit.net_margin_pct)}% net margin`],
-              ["Debt service cover", rep.kpis.dscr == null ? "—" : `${fmt(rep.kpis.dscr, 2)}×`, "Operating Surplus / repayments"],
-              ["Net worth", formatCurrency(rep.balance_sheet.net_worth), `${fmt(rep.balance_sheet.ratios.equity_pct)}% equity`],
-              ["Borrowing headroom", capacity?.new_loan ? formatCurrency(capacity.new_loan.max_principal) : "—", "Largest new loan, full year"],
-            ]}
-          />
-          <NetProfit p={rep.profit} />
-          <div className="grid gap-6 lg:grid-cols-2 print:grid-cols-2">
-            <Loans loans={rep.loans} meta={farm.loans} />
-            <Capacity c={capacity ?? rep.capacity} />
+        <ProLock pro={pro} title="A report your bank will read" value="Profit, debt cover, borrowing capacity and balance sheet in one PDF, ready for the loan meeting.">
+          <div className="space-y-6">
+            <Headline
+              items={[
+                ["Net profit before tax", formatCurrency(rep.profit.net_profit_before_tax), `${fmt(rep.profit.net_margin_pct)}% net margin`],
+                ["Debt service cover", rep.kpis.dscr == null ? "—" : `${fmt(rep.kpis.dscr, 2)}×`, "Operating Surplus / repayments"],
+                ["Net worth", formatCurrency(rep.balance_sheet.net_worth), `${fmt(rep.balance_sheet.ratios.equity_pct)}% equity`],
+                ["Borrowing headroom", capacity?.new_loan ? formatCurrency(capacity.new_loan.max_principal) : "—", "Largest new loan, full year"],
+              ]}
+            />
+            <NetProfit p={rep.profit} />
+            <div className="grid gap-6 lg:grid-cols-2 print:grid-cols-2">
+              <Loans loans={rep.loans} meta={farm.loans} />
+              <Capacity c={capacity ?? rep.capacity} />
+            </div>
+            <BalanceSheet bs={rep.balance_sheet} />
+            <Cash cash={rep.cash} />
           </div>
-          <BalanceSheet bs={rep.balance_sheet} />
-          <Cash cash={rep.cash} />
-        </>
+        </ProLock>
       ) : kind === "advisor" ? (
         <>
           <Kpis k={rep.kpis} />
