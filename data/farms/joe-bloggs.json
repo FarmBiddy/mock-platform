@@ -9,7 +9,7 @@
   },
   "year": 2026,
   "actual_through_month": 9,
-  "opening_cash": 30000,
+  "opening_cash": 45000,
   "milking_cows": 100,
   "hectares": 60,
   "household": { "drawings_per_year": 30000, "tax_per_year": 12000, "off_farm_income_per_year": 0 },

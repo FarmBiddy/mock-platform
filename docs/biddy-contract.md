@@ -75,14 +75,14 @@ Farmer asks in "Ask Biddy" (new chat or an existing one)
   "status": "answer",
   "agent": "finance",
   "answer": {
-    "text": "Yes. You're projected to have €69,389 at the end of November and €64,470 on 31 December, after loan repayments. Your lowest point this year was March (−€33,634), so plan for next spring.",
+    "text": "Yes. You're projected to have €84,389 at the end of November and €79,470 on 31 December, after loan repayments. Your lowest point this year was March (−€18,634), so plan for next spring.",
     "results": [
       { "function": "cf.months", "show": "cash_by_month", "response": { "status": "ok", "result": { "…": "engine result, unchanged" } } }
     ],
     "figures_used": [
-      { "result": 0, "path": "result.months[10].closing_cash", "value": 69388.98 },
-      { "result": 0, "path": "result.closing_cash", "value": 64469.78 },
-      { "result": 0, "path": "result.months[2].closing_cash", "value": -33634.08 }
+      { "result": 0, "path": "result.months[10].closing_cash", "value": 84388.98 },
+      { "result": 0, "path": "result.closing_cash", "value": 79469.78 },
+      { "result": 0, "path": "result.months[2].closing_cash", "value": -18634.08 }
     ],
     "highlights": [{ "card": "cash", "month": 12 }],
     "follow_ups": ["What if the milk price drops 5c?", "Show me the cash table"]
@@ -120,13 +120,15 @@ Farmer asks in "Ask Biddy" (new chat or an existing one)
 
 ## Example values (Joe Bloggs, Oct 2026, engine main)
 
+These are engine outputs for the current mock data; they change whenever the farm JSON changes.
+
 | Figure | Engine value |
 |---|---|
 | Operating Surplus YTD (Jan–Sep) | €79,460 (30% margin) |
 | Loan repayments YTD | €14,682.24 |
-| Cash end of Sep | €40,977.76 |
-| Lowest cash this year | −€33,634.08 (Mar) |
-| Projected cash 31 Dec | €64,469.78 (incl. €2,500/month household drawings) |
+| Cash end of Sep | €55,977.76 |
+| Lowest cash this year | −€18,634.08 (Mar) |
+| Projected cash 31 Dec | €79,469.78 (incl. €2,500/month household drawings) |
 | Loans outstanding / monthly | €65,951.03 / €1,631.37 |
 
 ## How we'd test it (platform side)
