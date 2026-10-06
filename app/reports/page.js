@@ -25,7 +25,10 @@ export default async function ReportsPage({ searchParams }) {
   const kind = REPORTS[r] ? r : "bank";
   const farm = getFarm();
 
-  const { inputs, cf } = await runFarm(farm);
+  const { inputs, cf, cap } = await runFarm(farm);
+  // Borrowing capacity over the full year (actual + forecast), the same debt.capacity run as Farm Financials,
+  // rather than the bundle's actual-period figure, so the bank report and the page agree.
+  const capacity = cap?.status === "ok" ? cap.result : null;
   const scenarios =
     kind === "advisor" ? WHAT_IF_PRESETS.filter((p) => ADVISOR_SCENARIOS.includes(p.id)).map((p) => ({ name: p.label, ...p.shock })) : [];
   const response =
@@ -78,13 +81,13 @@ export default async function ReportsPage({ searchParams }) {
               ["Net profit before tax", formatCurrency(rep.profit.net_profit_before_tax), `${fmt(rep.profit.net_margin_pct)}% net margin`],
               ["Debt service cover", rep.kpis.dscr == null ? "—" : `${fmt(rep.kpis.dscr, 2)}×`, "Operating Surplus / repayments"],
               ["Net worth", formatCurrency(rep.balance_sheet.net_worth), `${fmt(rep.balance_sheet.ratios.equity_pct)}% equity`],
-              ["Borrowing headroom", rep.capacity.new_loan ? formatCurrency(rep.capacity.new_loan.max_principal) : "—", "Largest new loan"],
+              ["Borrowing headroom", capacity?.new_loan ? formatCurrency(capacity.new_loan.max_principal) : "—", "Largest new loan, full year"],
             ]}
           />
           <NetProfit p={rep.profit} />
           <div className="grid gap-6 lg:grid-cols-2 print:grid-cols-2">
             <Loans loans={rep.loans} meta={farm.loans} />
-            <Capacity c={rep.capacity} />
+            <Capacity c={capacity ?? rep.capacity} />
           </div>
           <BalanceSheet bs={rep.balance_sheet} />
           <Cash cash={rep.cash} />

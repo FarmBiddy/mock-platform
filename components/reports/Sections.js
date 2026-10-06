@@ -144,7 +144,7 @@ export function Loans({ loans, meta }) {
 /** debt.capacity: what the household can repay and the largest new loan. */
 export function Capacity({ c }) {
   return (
-    <Section title="Repayment capacity" note={`${period(c)} · after household drawings and tax for the period`}>
+    <Section title="Repayment capacity" note={`${period(c)} (actual + forecast) · after household drawings and tax for the year`}>
       <Rows
         rows={[
           ["Operating Surplus", c.surplus],
