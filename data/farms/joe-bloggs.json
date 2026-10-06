@@ -14,6 +14,17 @@
   "hectares": 60,
   "household": { "drawings_per_year": 30000, "tax_per_year": 12000, "off_farm_income_per_year": 0 },
   "new_loan_terms": { "annual_rate": 0.055, "term_months": 84, "min_cover": 1.25 },
+  "plan_presets": {
+    "_note": "Advisor / market presets for plan.projection (the engine holds no market opinions). Lists are per year, index 0 = year 1; prices and amounts carry forward.",
+    "cautious": { "label": "Cautious", "note": "Milk at 42c for two years, then 44c; costs +3% a year", "assumptions": { "milk_price": [0.42, 0.42, 0.44], "cost_inflation_pct": [3, 3, 3, 3, 3], "drawings": [30000], "tax": [10000] } },
+    "base": { "label": "Base", "note": "Milk at 47c; costs +2% a year", "assumptions": { "milk_price": [0.47], "cost_inflation_pct": [2, 2, 2, 2, 2], "drawings": [30000], "tax": [12000] } },
+    "optimistic": { "label": "Optimistic", "note": "Milk at 50c; costs +2% a year; yield +1% a year", "assumptions": { "milk_price": [0.5], "cost_inflation_pct": [2, 2, 2, 2, 2], "yield_pct": [1, 1, 1, 1, 1], "drawings": [30000], "tax": [14000] } }
+  },
+  "plan_investments": [
+    { "id": "parlour", "name": "New rotary parlour in year 2", "note": "€120,000, €100,000 loan at 5% over 10 years, saves €15,000 a year in labour",
+      "year": 2, "amount": 120000, "life_months": 240, "category": "buildings",
+      "loan": { "amount": 100000, "annual_rate": 0.05, "remaining_months": 120 }, "annual_effects": { "labour": -15000 } }
+  ],
   "household_paid_to_date": { "drawings": 22500, "tax": 9000, "off_farm_income": 0 },
   "balance_sheet": {
     "_note": "Balances and valuations at the end of actual_through_month (platform records). Creditors come from suppliers.total_outstanding.",
