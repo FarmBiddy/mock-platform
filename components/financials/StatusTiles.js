@@ -16,7 +16,7 @@ const TONES = {
  */
 // Platform policy (not engine): lenders typically want debt service cover of at least 1.25×.
 const DSCR_OK = 1.25;
-const times = (v) => `${v.toLocaleString("en-IE", { maximumFractionDigits: 1 })}×`;
+const times = (v) => `${v.toLocaleString("en-IE", { maximumFractionDigits: 2 })}×`;
 
 export default function StatusTiles({ pl, cf, loans, kpi, plc, farm }) {
   const asOf = monthLabel(farm.actual_through_month);
