@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Badge, Card } from "@/components/ui";
 import { Stat } from "@/components/financials/PlatformCards";
+import PlanCharts from "@/components/plan/PlanCharts";
 import { planProjection } from "@/lib/financial-engine/client";
 import { loadFarm } from "@/lib/farm-edits";
 import { buildPlanInput, runFarm } from "@/lib/financials/farm";
@@ -125,6 +126,17 @@ export default async function PlanPage({ searchParams }) {
               hint={`Year ${lowDscr.year}${farm.new_loan_terms?.min_cover ? ` · lender minimum ${fmt(farm.new_loan_terms.min_cover, 2)}×` : ""}`}
             />
           </div>
+
+          <Card title="Cash and net worth" subtitle="At the end of each plan year" badge={<Badge>plan.projection</Badge>}>
+            <PlanCharts
+              years={plan.years.map((y) => ({
+                label: `Y${y.year}`,
+                period: `Year ${y.year}: ${ym(y.period.from)}–${ym(y.period.to)}`,
+                cash: y.cash.closing,
+                netWorth: y.balance_sheet.net_worth,
+              }))}
+            />
+          </Card>
 
           <Card title="Year by year" subtitle="Each year runs from the month after your last actual month." badge={<Badge>plan.projection</Badge>}>
             <div className="overflow-x-auto">
