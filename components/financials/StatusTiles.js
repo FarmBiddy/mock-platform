@@ -11,13 +11,18 @@ const TONES = {
 
 /**
  * The three questions a farmer asks, answered from engine values.
- * Only compares published figures (sign / which is bigger) — never derives new money.
+ * Only compares published figures (sign, engine DSCR vs a policy threshold) — never derives new money.
  */
-export default function StatusTiles({ pl, cf, loans, farm }) {
+// Platform policy (not engine): lenders typically want debt service cover of at least 1.25×.
+const DSCR_OK = 1.25;
+const times = (v) => `${v.toLocaleString("en-IE", { maximumFractionDigits: 1 })}×`;
+
+export default function StatusTiles({ pl, cf, loans, kpi, farm }) {
   const asOf = monthLabel(farm.actual_through_month);
   const ytd = pl.status === "ok" ? pl.result.ytd : null;
   const cash = cf.status === "ok" ? cf.result : null;
   const loan = loans.status === "ok" ? loans.result : null;
+  const dscr = kpi?.status === "ok" ? kpi.result.dscr : null;
 
   const minClosing = (ms) => (ms.length ? ms.reduce((a, b) => (b.closing_cash < a.closing_cash ? b : a)) : null);
   const lowest = minClosing(cash?.months.filter((m) => m.period.month > farm.actual_through_month) ?? []);
@@ -51,13 +56,13 @@ export default function StatusTiles({ pl, cf, loans, farm }) {
               : null,
         }
       : { question: "Will I have cash?", tone: "none", answer: "Needs your figures", detail: "See cash flow below" },
-    loan && ytd
+    loan && dscr != null
       ? {
           question: "Can I pay my loans?",
-          tone: ytd.profit.net > ytd.finance.loan_repayments ? "good" : "warn",
-          answer: ytd.profit.net > ytd.finance.loan_repayments ? "Yes, surplus covers them" : "Surplus doesn’t cover them",
+          tone: dscr >= DSCR_OK ? "good" : dscr >= 1 ? "warn" : "bad",
+          answer: dscr >= DSCR_OK ? "Yes, comfortably" : dscr >= 1 ? "Just about" : "Surplus doesn’t cover them",
           value: `${formatCurrency(loan.total_monthly_payment, loan.currency)} / month`,
-          detail: `${formatCurrency(ytd.finance.loan_repayments, ytd.currency)} repaid Jan–${asOf}`,
+          detail: `Surplus covers repayments ${times(dscr)} (Jan–${asOf}) · lenders look for ${times(DSCR_OK)}`,
         }
       : { question: "Can I pay my loans?", tone: "none", answer: "Needs your figures", detail: "See loans below" },
   ];

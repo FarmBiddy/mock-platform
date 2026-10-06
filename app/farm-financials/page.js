@@ -5,6 +5,7 @@ import CashChart from "@/components/financials/CashChart";
 import Breakdown, { StackedBreakdown, expenseRows, incomeRows } from "@/components/financials/Breakdown";
 import { EventsCard, LoansCard, Stat, SupplierDebtCard } from "@/components/financials/PlatformCards";
 import StatusTiles from "@/components/financials/StatusTiles";
+import KpiCard from "@/components/financials/KpiCard";
 import SourcesToggle from "@/components/SourcesToggle";
 import { getFarm, isProjected, runFarm } from "@/lib/financials/farm";
 import { cashChartData, surplusChartData } from "@/lib/financials/views";
@@ -21,7 +22,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
   const params = await searchParams;
   const farm = getFarm();
 
-  const { loans, pl, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
+  const { loans, pl, kpi, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
 
   const asOf = monthLabel(farm.actual_through_month);
   // Say which month / loan a nested needs_input path points at (index = position in our request).
@@ -45,7 +46,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
         <SourcesToggle />
       </div>
 
-      <StatusTiles pl={pl} cf={cf} loans={loans} farm={farm} />
+      <StatusTiles pl={pl} cf={cf} loans={loans} kpi={kpi} farm={farm} />
 
       <EngineGate response={pl} params={params} describePath={describePath}>
         {({ months }) => (
@@ -124,6 +125,8 @@ export default async function FarmFinancialsPage({ searchParams }) {
           }}
         </EngineGate>
       </Card>
+
+      {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} />}
 
       {/* Two balanced columns: short income + loans on the left, the long expense list on the right. */}
       <div className="grid items-start gap-6 lg:grid-cols-2">
