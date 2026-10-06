@@ -63,7 +63,8 @@ Farmer asks in "Ask Biddy" (new chat or an existing one)
 - `conversation.messages` is the chat so far (oldest first), without the new question.
 - `screen.card` is set when asked from a card (e.g. `"cash"`), `null` from the header or the chat page.
 - `inputs` are the engine request bodies exactly as the platform builds them (`lib/financials/farm.js`).
-  Months after `actual_through_month` are projections (budget + market prices).
+  Today: `loan.schedule`, `pl.forecast`, `pl.months`, `kpi.summary`, `cf.forecast`, `cf.months`.
+  Months after `actual_through_month` are projections from the engine forecast (`pl.forecast` / `cf.forecast`) at market prices.
   Projected loan and milk-cheque lines depend on earlier results (loan.schedule → pl.months → cf.months); the
   platform sends them already filled in.
 
@@ -74,14 +75,14 @@ Farmer asks in "Ask Biddy" (new chat or an existing one)
   "status": "answer",
   "agent": "finance",
   "answer": {
-    "text": "Yes. You're projected to have €148,415 at the end of November and €150,264 on 31 December, after loan repayments. Your lowest point this year was March (−€8,274), so plan for next spring.",
+    "text": "Yes. You're projected to have €120,486 at the end of November and €119,636 on 31 December, after loan repayments. Your lowest point this year was March (−€15,774), so plan for next spring.",
     "results": [
       { "function": "cf.months", "show": "cash_by_month", "response": { "status": "ok", "result": { "…": "engine result, unchanged" } } }
     ],
     "figures_used": [
-      { "result": 0, "path": "result.months[10].closing_cash", "value": 148415.02 },
-      { "result": 0, "path": "result.closing_cash", "value": 150263.65 },
-      { "result": 0, "path": "result.months[2].closing_cash", "value": -8274.08 }
+      { "result": 0, "path": "result.months[10].closing_cash", "value": 120486.11 },
+      { "result": 0, "path": "result.closing_cash", "value": 119635.82 },
+      { "result": 0, "path": "result.months[2].closing_cash", "value": -15774.08 }
     ],
     "highlights": [{ "card": "cash", "month": 12 }],
     "follow_ups": ["What if the milk price drops 5c?", "Show me the cash table"]
@@ -118,15 +119,15 @@ Farmer asks in "Ask Biddy" (new chat or an existing one)
 - A chat page shows the turns: user text; Biddy text + agent label + rendered `results`.
 - Storage: mock = per-browser storage; real = platform DB (out of scope for the mock).
 
-## Example values (Joe Bloggs, 5 Oct 2026, engine `cash-planning`)
+## Example values (Joe Bloggs, Oct 2026, engine main)
 
 | Figure | Engine value |
 |---|---|
 | Operating Surplus YTD (Jan–Sep) | €122,950 (46.72% margin) |
 | Loan repayments YTD | €14,682.24 |
-| Cash end of Sep | €106,967.76 |
-| Lowest cash this year | −€8,274.08 (Mar) |
-| Projected cash 31 Dec | €150,263.65 |
+| Cash end of Sep | €84,467.76 |
+| Lowest cash this year | −€15,774.08 (Mar) |
+| Projected cash 31 Dec | €119,635.82 (incl. €2,500/month household drawings) |
 | Loans outstanding / monthly | €65,951.03 / €1,631.37 |
 
 ## How we'd test it (platform side)
