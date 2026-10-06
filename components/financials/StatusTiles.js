@@ -15,7 +15,7 @@ const TONES = {
  * Only compares published figures (sign, engine DSCR vs a policy threshold) — never derives new money.
  */
 // Platform policy (not engine): lenders typically want debt service cover of at least 1.25×.
-const DSCR_OK = 1.25;
+export const DSCR_OK = 1.25;
 const times = (v) => `${v.toLocaleString("en-IE", { maximumFractionDigits: 2 })}×`;
 
 export default function StatusTiles({ pl, cf, loans, kpi, plc, farm }) {
