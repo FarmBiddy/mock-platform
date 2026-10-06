@@ -1,3 +1,4 @@
+import { loadFarm } from "@/lib/farm-edits";
 import { Badge, Card, COLORS } from "@/components/ui";
 import EngineGate, { withProvided } from "@/components/financials/EngineGate";
 import MonthlyChart from "@/components/financials/MonthlyChart";
@@ -10,7 +11,7 @@ import Change from "@/components/financials/Change";
 import WhatIfCard from "@/components/financials/WhatIfCard";
 import BorrowCard from "@/components/financials/BorrowCard";
 import SourcesToggle from "@/components/SourcesToggle";
-import { buildRiskInput, getFarm, isProjected, runFarm } from "@/lib/financials/farm";
+import { buildRiskInput, isProjected, runFarm } from "@/lib/financials/farm";
 import { riskSensitivity } from "@/lib/financial-engine/client";
 import { cashChartData, surplusChartData } from "@/lib/financials/views";
 import { formatCurrency } from "@/lib/format/currency";
@@ -24,7 +25,7 @@ export const metadata = { title: "Farm Financials · FarmBiddy" };
  */
 export default async function FarmFinancialsPage({ searchParams }) {
   const params = await searchParams;
-  const farm = getFarm();
+  const farm = await loadFarm();
 
   const { inputs, loans, plf, pl, kpi, plc, cap, cff, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
 

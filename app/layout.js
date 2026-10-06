@@ -1,7 +1,9 @@
 import { DM_Sans } from "next/font/google";
 import Sidebar from "@/components/shell/Sidebar";
 import MobileNav from "@/components/shell/MobileNav";
+import Link from "next/link";
 import { getFarm } from "@/lib/financials/farm";
+import { readEdits } from "@/lib/farm-edits";
 import "./globals.css";
 
 const sans = DM_Sans({ variable: "--font-sans", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
@@ -11,8 +13,9 @@ export const metadata = {
   description: "FarmBiddy mock platform — farm financials powered by the Financial Engine.",
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
   const { profile } = getFarm();
+  const edited = Object.keys(await readEdits()).length;
 
   return (
     <html lang="en" className={`${sans.variable} h-full antialiased`}>
@@ -33,6 +36,11 @@ export default function RootLayout({ children }) {
                 aria-label="Ask Biddy"
               />
             </form>
+            {edited > 0 && (
+              <Link href="/farm-data" className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-900 hover:bg-amber-200">
+                Edited data
+              </Link>
+            )}
             <button type="button" aria-label="Notifications" className="relative rounded-full p-2 text-stone-600 hover:bg-stone-100">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
                 <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0" />

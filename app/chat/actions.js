@@ -1,7 +1,8 @@
 "use server";
 
 import { ask } from "@/lib/biddy";
-import { getFarm, runFarm } from "@/lib/financials/farm";
+import { runFarm } from "@/lib/financials/farm";
+import { loadFarm } from "@/lib/farm-edits";
 import { cashChartData, surplusChartData } from "@/lib/financials/views";
 
 const MAX_QUESTION = 1000;
@@ -20,7 +21,7 @@ export async function askBiddy({ chatId, messages, question, screen }) {
     .filter((m) => (m?.role === "user" || m?.role === "biddy") && typeof m.text === "string")
     .map((m) => ({ role: m.role, text: m.text.slice(0, MAX_QUESTION * 4), ...(m.agent ? { agent: String(m.agent) } : {}) }));
 
-  const farm = getFarm();
+  const farm = await loadFarm();
   const { inputs } = await runFarm(farm);
   const now = new Date();
 

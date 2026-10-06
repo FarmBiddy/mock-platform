@@ -2,6 +2,7 @@ export const NAV = [
   ["Dashboard", "/dashboard"],
   ["Farm Financials", "/farm-financials"],
   ["Reports", "/reports"],
+  ["Farm Data", "/farm-data"],
   ["Documents", "/documents"],
   ["Notifications", "/notifications"],
   ["Events", "/events"],

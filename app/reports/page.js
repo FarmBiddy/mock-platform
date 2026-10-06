@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { loadFarm } from "@/lib/farm-edits";
 import { runReport } from "@/lib/financial-engine/client";
-import { buildReportInput, getFarm, runFarm } from "@/lib/financials/farm";
+import { buildReportInput, runFarm } from "@/lib/financials/farm";
 import { WHAT_IF_PRESETS } from "@/lib/financials/whatIf";
 import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
@@ -23,7 +24,7 @@ const fmt = (v, d = 1) => v.toLocaleString("en-IE", { maximumFractionDigits: d }
 export default async function ReportsPage({ searchParams }) {
   const { r } = await searchParams;
   const kind = REPORTS[r] ? r : "bank";
-  const farm = getFarm();
+  const farm = await loadFarm();
 
   const { inputs, cf, cap } = await runFarm(farm);
   // Borrowing capacity over the full year (actual + forecast), the same debt.capacity run as Farm Financials,

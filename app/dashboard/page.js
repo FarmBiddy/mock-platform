@@ -1,8 +1,9 @@
 import Link from "next/link";
 import StatusTiles, { DSCR_OK } from "@/components/financials/StatusTiles";
+import { loadFarm } from "@/lib/farm-edits";
 import { EventsCard } from "@/components/financials/PlatformCards";
 import { Card } from "@/components/ui";
-import { getFarm, isProjected, runFarm } from "@/lib/financials/farm";
+import { isProjected, runFarm } from "@/lib/financials/farm";
 import { formatCurrency } from "@/lib/format/currency";
 import { dayLabel, monthLabel } from "@/lib/format/date";
 
@@ -38,7 +39,7 @@ function attention(farm, { plf, pl, kpi, cff, cf, loans }) {
 }
 
 export default async function DashboardPage() {
-  const farm = getFarm();
+  const farm = await loadFarm();
   const results = await runFarm(farm);
   const items = attention(farm, results);
   const today = new Date();
