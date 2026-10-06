@@ -22,16 +22,17 @@ export default async function FarmFinancialsPage({ searchParams }) {
   const params = await searchParams;
   const farm = getFarm();
 
-  const { loans, pl, kpi, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
+  const { inputs, loans, plf, pl, kpi, cff, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
 
   const asOf = monthLabel(farm.actual_through_month);
-  // Say which month / loan a nested needs_input path points at (index = position in our request).
-  const describePath = (path) => {
+  // Say which month / loan a nested needs_input path points at, from the request that was sent.
+  const describePath = (path, fn) => {
     const [, list, i] = path.match(/^(\w+)\[(\d+)\]/) ?? [];
-    if (list === "months") return farm.months[i] && monthLabel(farm.months[i].month);
     if (list === "loans") return farm.loans[i]?.name;
-    return null;
+    const item = inputs[fn]?.[list]?.[i];
+    return item?.month ? `${monthLabel(item.month)}${item.year !== farm.year ? ` ${item.year}` : ""}` : null;
   };
+  const forecastIssue = [plf, cff].find((r) => r && r.status !== "ok");
   const tag = (m) => ({ label: monthLabel(m.period.month), projected: isProjected(farm, m.period.month) });
 
   return (
@@ -40,11 +41,17 @@ export default async function FarmFinancialsPage({ searchParams }) {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Farm Financials</h1>
           <p className="text-sm text-stone-500">
-            {farm.profile.farm_name} · {farm.year} · actuals to end of {asOf}, budget after
+            {farm.profile.farm_name} · {farm.year} · actuals to end of {asOf}, forecast after
           </p>
         </div>
         <SourcesToggle />
       </div>
+
+      {forecastIssue && (
+        <p role="status" className="rounded-xl bg-amber-50 px-4 py-2 text-sm text-amber-900 ring-1 ring-amber-200">
+          Showing actual months only — the forecast couldn’t run ({forecastIssue.error?.message ?? "missing figures"}).
+        </p>
+      )}
 
       <StatusTiles pl={pl} cf={cf} loans={loans} kpi={kpi} farm={farm} />
 
@@ -52,7 +59,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
         {({ months }) => (
           <Card
             title="Operating Surplus by month"
-            subtitle="Income minus operating costs, Jan–Dec. Hatched months after “Today” are projected from your budget and market prices."
+            subtitle="Income minus operating costs, Jan–Dec. Hatched months after “Today” are forecast by the engine from last year’s pattern, this year’s trend and market prices."
             badge={<Badge>pl.months</Badge>}
           >
             <MonthlyChart data={surplusChartData(farm, months)} />

@@ -6,7 +6,7 @@ import { labelForInput } from "@/lib/financial-engine/mapResult";
  *
  * Field names are "<function>:<path>" (path = engine `path`, or the field for top-level
  * inputs) so each answer goes back to the right call and the right place in it.
- * `describePath("months[3].milk_price")` lets the page say which month/loan, e.g. "Apr".
+ * `describePath("months[3].milk_price", fn)` lets the page say which month/loan, e.g. "Apr".
  */
 export default function EngineGate({ response, params = {}, describePath = () => null, children }) {
   if (response.status === "ok") return children(response.result);
@@ -22,7 +22,7 @@ export default function EngineGate({ response, params = {}, describePath = () =>
           <label key={path} className="flex items-center gap-3">
             <span className="w-48 text-stone-700">
               {labelForInput(field)}
-              {path !== field && <span className="text-stone-400"> · {describePath(path) ?? path}</span>}{" "}
+              {path !== field && <span className="text-stone-400"> · {describePath(path, response.function) ?? path}</span>}{" "}
               <span className="text-stone-400">({unit})</span>
             </span>
             <input
