@@ -10,7 +10,7 @@ export default function Sidebar() {
   const chats = useChats();
 
   return (
-    <aside className="flex w-60 shrink-0 flex-col gap-6 bg-[#173a2b] px-4 py-6 text-[#dfe9df] max-lg:hidden">
+    <aside className="flex w-60 shrink-0 print:hidden flex-col gap-6 bg-[#173a2b] px-4 py-6 text-[#dfe9df] max-lg:hidden">
       <Link href="/farm-financials" className="px-2 text-xl font-semibold tracking-tight text-white">
         FarmBiddy
       </Link>

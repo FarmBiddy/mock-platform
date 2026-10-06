@@ -19,3 +19,12 @@ body {
 html:not([data-sources]) .source-badge {
   display: none;
 }
+
+/* Reports print as plain pages (app chrome carries print:hidden). */
+@media print {
+  body,
+  main {
+    background: white !important;
+    padding: 0 !important;
+  }
+}

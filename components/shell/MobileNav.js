@@ -23,7 +23,7 @@ export default function MobileNav() {
   );
 
   return (
-    <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-20 flex gap-1 bg-[#173a2b] px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] lg:hidden">
+    <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-20 flex print:hidden gap-1 bg-[#173a2b] px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] lg:hidden">
       {NAV.filter(([, href]) => PRIMARY.includes(href)).map(([label, href]) => item(label, href))}
       {/* key remounts (closes) the sheet after navigating */}
       <details key={pathname} className="relative flex-1">

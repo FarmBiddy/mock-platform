@@ -19,7 +19,7 @@ export default function RootLayout({ children }) {
       <body className="flex min-h-full bg-[#eef1ec] font-[family-name:var(--font-sans)] text-stone-900">
         <Sidebar />
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex items-center gap-3 border-b border-stone-200 bg-white px-4 py-3 sm:gap-4 sm:px-6">
+          <header className="flex items-center gap-3 print:hidden border-b border-stone-200 bg-white px-4 py-3 sm:gap-4 sm:px-6">
             <span className="text-lg font-semibold tracking-tight text-[#173a2b] lg:hidden">FarmBiddy</span>
             {/* Native GET form: Enter opens a new Biddy chat with the question. */}
             <form action="/chat" role="search" className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm">
