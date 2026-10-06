@@ -14,6 +14,23 @@
   "hectares": 60,
   "household": { "drawings_per_year": 30000, "tax_per_year": 12000, "off_farm_income_per_year": 0 },
   "new_loan_terms": { "annual_rate": 0.055, "term_months": 84, "min_cover": 1.25 },
+  "household_paid_to_date": { "drawings": 22500, "tax": 9000, "off_farm_income": 0 },
+  "balance_sheet": {
+    "_note": "Balances and valuations at the end of actual_through_month (platform records). Creditors come from suppliers.total_outstanding.",
+    "debtors": 26000,
+    "stock": 12000,
+    "stock_opening_value": 15000,
+    "livestock": 182000,
+    "livestock_opening_value": 175000,
+    "land": 560000,
+    "other_long_term_liabilities": 0
+  },
+  "assets": [
+    { "id": "parlour", "name": "Milking parlour & cubicle shed", "category": "buildings", "cost": 180000, "year": 2016, "month": 4, "method": "straight_line", "life_months": 240 },
+    { "id": "feeder", "name": "Diet feeder", "category": "machinery", "cost": 22000, "year": 2021, "month": 3, "method": "straight_line", "life_months": 120, "residual_value": 2000 },
+    { "id": "tractor", "name": "Second-hand tractor", "category": "machinery", "cost": 15000, "year": 2025, "month": 10, "method": "reducing_balance", "annual_rate": 0.125 },
+    { "id": "tanker", "name": "Slurry tanker", "category": "machinery", "cost": 8500, "year": 2026, "month": 5, "method": "reducing_balance", "annual_rate": 0.125 }
+  ],
   "months": [
     { "month": 1, "pl": { "milk_litres": 6000, "milk_price": 0.44, "loan_repayments": 1631.36 }, "cash": { "milk": 3200, "loan_principal_repayments": 1376.11, "interest_paid": 255.25, "household_drawings": 2500 },
       "lines": { "feed": 11790, "vet": 790, "labour": 3670, "fuel": 590, "electricity": 680, "repairs_maintenance": 520, "levies": 30 } },
