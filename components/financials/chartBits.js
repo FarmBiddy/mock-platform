@@ -3,10 +3,13 @@ import { ReferenceLine } from "recharts";
 
 export const compact = (v) => `${v < 0 ? "−" : ""}€${Math.round(Math.abs(v) / 1000)}k`;
 
-/** Round axis ticks (1/2/5 × 10ⁿ steps) covering the values and zero. Axis only — not data. */
-export function niceTicks(values, count = 5) {
-  const lo = Math.min(0, ...values);
-  const hi = Math.max(0, ...values);
+/**
+ * Round axis ticks (1/2/5 × 10ⁿ steps) covering the values (and zero unless `zero: false`, for lines).
+ * Axis only — not data.
+ */
+export function niceTicks(values, count = 5, { zero = true } = {}) {
+  const lo = Math.min(...(zero ? [0] : []), ...values);
+  const hi = Math.max(...(zero ? [0] : []), ...values);
   const raw = (hi - lo) / count || 1;
   const pow = 10 ** Math.floor(Math.log10(raw));
   const step = [1, 2, 5, 10].map((m) => m * pow).find((s) => s >= raw);

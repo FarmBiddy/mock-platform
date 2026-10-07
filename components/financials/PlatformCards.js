@@ -1,13 +1,18 @@
 import { Badge, Card } from "@/components/ui";
 import EngineGate from "@/components/financials/EngineGate";
 import { formatCurrency } from "@/lib/format/currency";
+import { formatMarginPct } from "@/lib/format/percent";
 import { dayLabel, monthLabel } from "@/lib/format/date";
 
-/** @param {{ response: import("@/lib/financial-engine/client").EngineResponse<import("@/lib/financial-engine/client").LoanScheduleResult> }} props */
-export function LoansCard({ response }) {
+/**
+ * Loans from loan.schedule. Engine results are in the same order as the platform's
+ * `loans` (which holds names, lenders, rate type).
+ * @param {{ response: import("@/lib/financial-engine/client").EngineResponse<import("@/lib/financial-engine/client").LoanScheduleResult>, loans: object[], params?: object }} props
+ */
+export function LoansCard({ response, loans, params, describePath }) {
   return (
-    <Card title="Loans & Repayments" subtitle="Not an operating cost — shown here and in cash flow" badge={<Badge tone="soon">Coming soon · loan.schedule</Badge>}>
-      <EngineGate response={response}>
+    <Card title="Loans & Repayments" subtitle="Not an operating cost — shown here and in cash flow" badge={<Badge>loan.schedule</Badge>}>
+      <EngineGate response={response} params={params} describePath={describePath}>
         {(r) => (
           <>
             <div className="mb-4 flex gap-6 text-sm">
@@ -15,21 +20,34 @@ export function LoansCard({ response }) {
               <Stat label="Monthly repayments" value={formatCurrency(r.total_monthly_payment, r.currency)} />
             </div>
             <ul className="space-y-3">
-              {r.loans.map((l) => (
-                <li key={l.id} className="rounded-xl bg-stone-50 p-3 text-sm">
-                  <div className="flex justify-between gap-3">
-                    <span className="font-medium">{l.name}</span>
-                    <span className="tabular-nums font-medium">{formatCurrency(l.balance, r.currency)}</span>
-                  </div>
-                  <p className="mt-1 text-xs text-stone-500">
-                    {l.lender} · {l.rate_pct}% · ends {monthLabel(l.end.month)} {l.end.year}
-                  </p>
-                  <p className="mt-1 text-xs text-stone-600">
-                    Next: {formatCurrency(l.next_payment.total, r.currency)} on {monthLabel(l.next_payment.month)} (
-                    {formatCurrency(l.next_payment.principal, r.currency)} principal + {formatCurrency(l.next_payment.interest, r.currency)} interest)
-                  </p>
-                </li>
-              ))}
+              {r.loans.map((l, i) => {
+                const meta = loans[i];
+                const next = l.months[0];
+                const end = l.months.at(-1).period;
+                return (
+                  <li key={meta.id} className="rounded-xl bg-stone-50 p-3 text-sm">
+                    <div className="flex justify-between gap-3">
+                      <span className="font-medium">{meta.name}</span>
+                      <span className="tabular-nums font-medium">{formatCurrency(l.balance, r.currency)}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-stone-500">
+                      {meta.lender} · {meta.rate_type} {formatRate(l.annual_rate)} · ends {monthLabel(end.month)} {end.year}
+                    </p>
+                    <p className="mt-1 text-xs text-stone-600">
+                      Next {monthLabel(next.period.month)}: {formatCurrency(next.payment, r.currency)} (
+                      {formatCurrency(next.principal, r.currency)} principal + {formatCurrency(next.interest, r.currency)} interest)
+                    </p>
+                    {l.repaid_pct != null && (
+                      <div className="mt-2 flex items-center gap-2 text-xs text-stone-500">
+                        <div className="h-1.5 flex-1 rounded-full bg-stone-200">
+                          <div className="h-1.5 rounded-full bg-emerald-700" style={{ width: `${l.repaid_pct}%` }} />
+                        </div>
+                        {formatMarginPct(l.repaid_pct, 0)} repaid
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </>
         )}
@@ -37,6 +55,8 @@ export function LoansCard({ response }) {
     </Card>
   );
 }
+
+const formatRate = (rate) => `${(rate * 100).toLocaleString("en-IE", { maximumFractionDigits: 2 })}%`;
 
 export function SupplierDebtCard({ data }) {
   return (

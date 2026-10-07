@@ -1,13 +1,21 @@
+import { loadFarm } from "@/lib/farm-edits";
 import { Badge, Card, COLORS } from "@/components/ui";
-import EngineGate, { providedFor } from "@/components/financials/EngineGate";
+import EngineGate, { withProvided } from "@/components/financials/EngineGate";
 import MonthlyChart from "@/components/financials/MonthlyChart";
 import CashChart from "@/components/financials/CashChart";
-import Breakdown, { expenseRows, incomeRows } from "@/components/financials/Breakdown";
+import Breakdown, { StackedBreakdown, expenseRows, incomeRows } from "@/components/financials/Breakdown";
 import { EventsCard, LoansCard, Stat, SupplierDebtCard } from "@/components/financials/PlatformCards";
 import StatusTiles from "@/components/financials/StatusTiles";
+import KpiCard from "@/components/financials/KpiCard";
+import Change from "@/components/financials/Change";
+import WhatIfCard from "@/components/financials/WhatIfCard";
+import BorrowCard from "@/components/financials/BorrowCard";
 import SourcesToggle from "@/components/SourcesToggle";
-import { cfMonths, loanSchedule, plMonths } from "@/lib/financial-engine/client";
-import { buildCfMonthsInput, buildPlMonthsInput, getFarm, isProjected } from "@/lib/financials/farm";
+import ProLock from "@/components/ProLock";
+import { getViewer } from "@/lib/session";
+import { buildRiskInput, isProjected, runFarm } from "@/lib/financials/farm";
+import { riskSensitivity } from "@/lib/financial-engine/client";
+import { cashChartData, surplusChartData } from "@/lib/financials/views";
 import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
 
@@ -19,64 +27,61 @@ export const metadata = { title: "Farm Financials · FarmBiddy" };
  */
 export default async function FarmFinancialsPage({ searchParams }) {
   const params = await searchParams;
-  const farm = getFarm();
+  const farm = await loadFarm();
+  const { pro, role } = await getViewer();
 
-  const [pl, loans] = await Promise.all([plMonths(buildPlMonthsInput(farm)), loanSchedule({})]);
-  // Projected cash needs projected milk revenue from pl.months, so cash waits for it.
-  const cf =
-    pl.status === "ok"
-      ? await cfMonths(buildCfMonthsInput(farm, pl.result, providedFor("cf.months", params)))
-      : { status: "error", error: { code: "needs_pl", message: "Cash flow needs the monthly P&L first." } };
+  const { inputs, loans, plf, pl, kpi, plc, cap, cff, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
 
   const asOf = monthLabel(farm.actual_through_month);
+  // Say which month / loan a nested needs_input path points at, from the request that was sent.
+  const describePath = (path, fn) => {
+    const [, list, i] = path.match(/^(\w+)\[(\d+)\]/) ?? [];
+    if (list === "loans") return farm.loans[i]?.name;
+    const item = inputs[fn]?.[list]?.[i];
+    return item?.month ? `${monthLabel(item.month)}${item.year !== farm.year ? ` ${item.year}` : ""}` : null;
+  };
+  const forecastIssue = [plf, cff].find((r) => r && r.status !== "ok");
+  // This year vs last is Pro.
+  const vs = pro && plc?.status === "ok" ? plc.result : null;
+  // Base case only on load; the panel re-runs with the scenarios the farmer ticks.
+  const risk = cf.status === "ok" ? await riskSensitivity(buildRiskInput(farm, inputs)) : null;
+  const vsLabel = `vs Jan–${asOf} ${farm.year - 1}`;
   const tag = (m) => ({ label: monthLabel(m.period.month), projected: isProjected(farm, m.period.month) });
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-4 sm:p-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Farm Financials</h1>
           <p className="text-sm text-stone-500">
-            {farm.profile.farm_name} · {farm.year} · actuals to end of {asOf}, budget after
+            {farm.profile.farm_name} · {farm.year} · actuals to end of {asOf}, forecast after
           </p>
         </div>
         <SourcesToggle />
       </div>
 
-      <StatusTiles pl={pl} cf={cf} loans={loans} farm={farm} />
+      {forecastIssue && (
+        <p role="status" className="rounded-xl bg-amber-50 px-4 py-2 text-sm text-amber-900 ring-1 ring-amber-200">
+          Showing actual months only — the forecast couldn’t run ({forecastIssue.error?.message ?? "missing figures"}).
+        </p>
+      )}
 
-      <EngineGate response={pl} params={params}>
-        {({ months, ytd, currency }) => (
-          <>
-            <Card
-              title="Operating Surplus by month"
-              subtitle="Income minus operating costs, Jan–Dec. Hatched months after “Today” are projected from your budget and market prices."
-              badge={<Badge>pl.months</Badge>}
-            >
-              <MonthlyChart
-                data={months.map((m) => ({
-                  ...tag(m),
-                  income: m.revenue.total,
-                  costs: m.costs.total,
-                  surplus: m.profit.net,
-                }))}
-              />
-            </Card>
+      <StatusTiles pl={pl} cf={cf} loans={loans} kpi={kpi} plc={pro ? plc : null} farm={farm} />
 
-            <div className="grid gap-6 lg:grid-cols-2">
-              <Card title="Income Breakdown YTD" subtitle={`Jan–${asOf}`} badge={<Badge>pl.months · ytd</Badge>}>
-                <Breakdown rows={incomeRows(ytd.revenue)} total={ytd.revenue.total} currency={currency} />
-              </Card>
-              <Card title="Expense Breakdown YTD" subtitle={`Operating costs, Jan–${asOf}. Loan repayments excluded.`} badge={<Badge>pl.months · ytd</Badge>}>
-                <Breakdown rows={expenseRows(ytd.costs.lines)} total={ytd.costs.total} color={COLORS.costs} currency={currency} />
-              </Card>
-            </div>
-          </>
+      <EngineGate response={pl} params={params} describePath={describePath}>
+        {({ months }) => (
+          <Card
+            title="Operating Surplus by month"
+            subtitle="Income minus operating costs, Jan–Dec. Hatched months after “Today” are forecast by the engine from last year’s pattern, this year’s trend and market prices."
+            badge={<Badge>pl.months</Badge>}
+          >
+            <MonthlyChart data={surplusChartData(farm, months)} />
+          </Card>
         )}
       </EngineGate>
 
       <Card title="Cash in the bank, month by month" subtitle="Month-end balance incl. loan repayments and machinery spend" badge={<Badge>cf.months</Badge>}>
-        <EngineGate response={cf} params={params}>
+        <EngineGate response={cf} params={params} describePath={describePath}>
           {(r) => {
             const now = r.months.find((m) => m.period.month === farm.actual_through_month);
             const lowest = r.months.reduce((a, b) => (b.closing_cash < a.closing_cash ? b : a));
@@ -92,24 +97,107 @@ export default async function FarmFinancialsPage({ searchParams }) {
                   />
                   <Stat label="Projected 31 Dec" value={formatCurrency(r.closing_cash, r.currency)} />
                 </div>
-                <CashChart
-                  data={r.months.map((m) => ({
-                    ...tag(m),
-                    closing: m.closing_cash,
-                    cashIn: m.cash_in,
-                    cashOut: m.cash_out,
-                  }))}
-                />
+                <CashChart data={cashChartData(farm, r.months)} />
+                {/* The advisor works in the detail: month by month starts open. */}
+                <details open={role === "advisor"} className="mt-4 text-sm">
+                  <summary className="cursor-pointer text-emerald-800 hover:underline">Show month by month</summary>
+                  <div className="mt-3 overflow-x-auto">
+                    <table className="w-full min-w-[32rem] tabular-nums">
+                      <thead className="text-left text-xs text-stone-500">
+                        <tr>
+                          <th className="py-1 font-medium">Month</th>
+                          <th className="py-1 text-right font-medium">Cash in</th>
+                          <th className="py-1 text-right font-medium">Cash out</th>
+                          <th className="py-1 text-right font-medium">Net</th>
+                          <th className="py-1 text-right font-medium">Month-end</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-stone-100">
+                        {r.months.map((m) => {
+                          const { label, projected } = tag(m);
+                          return (
+                            <tr key={label} className={projected ? "text-stone-500" : ""}>
+                              <td className="py-1.5">
+                                {label}
+                                {projected && <span className="ml-1 text-xs">(proj.)</span>}
+                              </td>
+                              <td className="py-1.5 text-right">{formatCurrency(m.cash_in, r.currency)}</td>
+                              <td className="py-1.5 text-right">{formatCurrency(m.cash_out, r.currency)}</td>
+                              <td className={`py-1.5 text-right ${m.net_cash_flow < 0 ? "text-red-700" : ""}`}>{formatCurrency(m.net_cash_flow, r.currency)}</td>
+                              <td className={`py-1.5 text-right font-medium ${m.closing_cash < 0 ? "text-red-700" : ""}`}>{formatCurrency(m.closing_cash, r.currency)}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot className="border-t border-stone-200 font-semibold">
+                        <tr>
+                          <td className="py-1.5">Year</td>
+                          <td className="py-1.5 text-right">{formatCurrency(r.cash_in, r.currency)}</td>
+                          <td className="py-1.5 text-right">{formatCurrency(r.cash_out, r.currency)}</td>
+                          <td className="py-1.5 text-right">{formatCurrency(r.net_cash_flow, r.currency)}</td>
+                          <td className="py-1.5 text-right">{formatCurrency(r.closing_cash, r.currency)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </details>
               </>
             );
           }}
         </EngineGate>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2 2xl:grid-cols-3">
-        <LoansCard response={loans} />
-        <SupplierDebtCard data={farm.suppliers} />
+      {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} />}
+
+      {risk && (
+        <ProLock pro={pro} title="What if milk drops or feed goes up?" value="Test price and cost shocks on your own cash and surplus before they happen.">
+          <WhatIfCard initial={risk} />
+        </ProLock>
+      )}
+
+      {/* Two balanced columns: income + loans on the left, expenses + borrowing capacity on the right. */}
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
+          {pl.status === "ok" && (
+            <Card title="Income YTD" subtitle={`Jan–${asOf}`} badge={<Badge>pl.months · ytd</Badge>}>
+              <StackedBreakdown
+                rows={incomeRows(pl.result.ytd.revenue)}
+                total={pl.result.ytd.revenue.total}
+                currency={pl.result.currency}
+                change={vs && <Change leaf={vs.revenue.total} label={vsLabel} />}
+              />
+              {vs && vs.revenue.milk.change !== 0 && (
+                <p className="mt-3 text-xs text-stone-500">
+                  Milk income {vs.revenue.milk.change > 0 ? "up" : "down"} {formatCurrency(Math.abs(vs.revenue.milk.change))}: {formatCurrency(vs.milk.volume_effect)} from{" "}
+                  {vs.milk.litres.change >= 0 ? "more" : "fewer"} litres, {formatCurrency(vs.milk.price_effect)} from{" "}
+                  {vs.milk.price_c.change >= 0 ? "a better" : "a lower"} price.
+                </p>
+              )}
+            </Card>
+          )}
+          <LoansCard response={loans} loans={farm.loans} params={params} describePath={describePath} />
+        </div>
+        <div className="space-y-6">
+          {pl.status === "ok" && (
+            <Card title="Expenses YTD" subtitle={`Operating costs, Jan–${asOf}. Loan repayments excluded.`} badge={<Badge>pl.months · ytd</Badge>}>
+              <Breakdown
+                rows={expenseRows(pl.result.ytd.costs.lines)}
+                total={pl.result.ytd.costs.total}
+                color={COLORS.costs}
+                currency={pl.result.currency}
+                change={vs && <Change leaf={vs.costs.total} label={vsLabel} upIsGood={false} />}
+              />
+            </Card>
+          )}
+          <ProLock pro={pro} title="How much more could you borrow?" value="The loan your surplus can carry at the bank’s cover, worked out before you ask.">
+            <BorrowCard response={cap} params={params} describePath={describePath} />
+          </ProLock>
+        </div>
+      </div>
+
+      <div className="grid items-start gap-6 lg:grid-cols-2">
         <EventsCard data={farm.events} />
+        <SupplierDebtCard data={farm.suppliers} />
       </div>
     </div>
   );

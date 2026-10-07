@@ -1,6 +1,12 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "web", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000 }
+    { "name": "web", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000 },
+    {
+      "name": "engine",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-m", "uvicorn", "--app-dir", "../engine-main", "api.app:app", "--host", "127.0.0.1", "--port", "8000"],
+      "port": 8000
+    }
   ]
 }

@@ -1,0 +1,789 @@
+{
+  "profile": {
+    "id": "tom-walsh",
+    "name": "Tom Walsh",
+    "initials": "TW",
+    "farm_name": "Walsh Farm",
+    "county": "Co. Clare",
+    "enterprise": "dairy"
+  },
+  "year": 2026,
+  "actual_through_month": 9,
+  "opening_cash": 15000,
+  "milking_cows": 55,
+  "hectares": 38,
+  "household": {
+    "drawings_per_year": 24000,
+    "tax_per_year": 3000,
+    "off_farm_income_per_year": 0
+  },
+  "new_loan_terms": {
+    "annual_rate": 0.055,
+    "term_months": 84,
+    "min_cover": 1.25
+  },
+  "plan_presets": {
+    "_note": "Advisor / market presets for plan.projection (the engine holds no market opinions). Lists are per year, index 0 = year 1; prices and amounts carry forward.",
+    "cautious": {
+      "label": "Cautious",
+      "note": "Milk at 42c for two years, then 44c; costs +3% a year",
+      "assumptions": {
+        "milk_price": [
+          0.42,
+          0.42,
+          0.44
+        ],
+        "cost_inflation_pct": [
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "drawings": [
+          24000
+        ],
+        "tax": [
+          3000
+        ]
+      }
+    },
+    "base": {
+      "label": "Base",
+      "note": "Milk at 47c; costs +2% a year",
+      "assumptions": {
+        "milk_price": [
+          0.47
+        ],
+        "cost_inflation_pct": [
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "drawings": [
+          24000
+        ],
+        "tax": [
+          3000
+        ]
+      }
+    },
+    "optimistic": {
+      "label": "Optimistic",
+      "note": "Milk at 50c; costs +2% a year; yield +1% a year",
+      "assumptions": {
+        "milk_price": [
+          0.5
+        ],
+        "cost_inflation_pct": [
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "yield_pct": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "drawings": [
+          24000
+        ],
+        "tax": [
+          3000
+        ]
+      }
+    }
+  },
+  "plan_investments": [],
+  "household_paid_to_date": {
+    "drawings": 18000,
+    "tax": 2250,
+    "off_farm_income": 0
+  },
+  "balance_sheet": {
+    "_note": "Balances and valuations at the end of actual_through_month (platform records). Creditors come from suppliers.total_outstanding.",
+    "debtors": 14300,
+    "stock": 6600,
+    "stock_opening_value": 8250,
+    "livestock": 100100,
+    "livestock_opening_value": 96250,
+    "land": 354670,
+    "other_long_term_liabilities": 0
+  },
+  "assets": [
+    {
+      "id": "parlour",
+      "name": "Milking parlour & cubicle shed",
+      "category": "buildings",
+      "cost": 99000,
+      "year": 2016,
+      "month": 4,
+      "method": "straight_line",
+      "life_months": 240
+    },
+    {
+      "id": "feeder",
+      "name": "Diet feeder",
+      "category": "machinery",
+      "cost": 12100,
+      "year": 2021,
+      "month": 3,
+      "method": "straight_line",
+      "life_months": 120,
+      "residual_value": 2000
+    },
+    {
+      "id": "tractor",
+      "name": "Second-hand tractor",
+      "category": "machinery",
+      "cost": 8250,
+      "year": 2025,
+      "month": 10,
+      "method": "reducing_balance",
+      "annual_rate": 0.125
+    },
+    {
+      "id": "tanker",
+      "name": "Slurry tanker",
+      "category": "machinery",
+      "cost": 4680,
+      "year": 2026,
+      "month": 5,
+      "method": "reducing_balance",
+      "annual_rate": 0.125
+    }
+  ],
+  "months": [
+    {
+      "month": 1,
+      "pl": {
+        "milk_litres": 2880,
+        "milk_price": 0.44,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 1540,
+        "loan_principal_repayments": 481.64,
+        "interest_paid": 89.34,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 7310,
+        "vet": 490,
+        "labour": 2280,
+        "fuel": 370,
+        "electricity": 420,
+        "repairs_maintenance": 320,
+        "levies": 20
+      }
+    },
+    {
+      "month": 2,
+      "pl": {
+        "milk_litres": 13440,
+        "milk_price": 0.44,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 1270,
+        "loan_principal_repayments": 483.22,
+        "interest_paid": 87.76,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 6910,
+        "vet": 1950,
+        "labour": 3090,
+        "fuel": 390,
+        "electricity": 450,
+        "levies": 70,
+        "cattle_sales": 660
+      }
+    },
+    {
+      "month": 3,
+      "pl": {
+        "milk_litres": 29760,
+        "milk_price": 0.45,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 5910,
+        "loan_principal_repayments": 484.81,
+        "interest_paid": 86.17,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 5280,
+        "fertiliser": 3660,
+        "vet": 1460,
+        "labour": 3090,
+        "insurance": 3250,
+        "fuel": 420,
+        "electricity": 490,
+        "rent_lease": 4870,
+        "levies": 160,
+        "cattle_sales": 2640
+      }
+    },
+    {
+      "month": 4,
+      "pl": {
+        "milk_litres": 37440,
+        "milk_price": 0.46,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 13390,
+        "loan_principal_repayments": 486.4,
+        "interest_paid": 84.58,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 3090,
+        "fertiliser": 4220,
+        "vet": 730,
+        "labour": 2760,
+        "fuel": 450,
+        "electricity": 500,
+        "professional_fees": 1220,
+        "levies": 200,
+        "cattle_sales": 1980
+      }
+    },
+    {
+      "month": 5,
+      "pl": {
+        "milk_litres": 41280,
+        "milk_price": 0.46,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 17220,
+        "machinery_equipment_payments": 4680,
+        "loan_principal_repayments": 488,
+        "interest_paid": 82.98,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 2110,
+        "fertiliser": 3410,
+        "vet": 410,
+        "contractor": 1950,
+        "labour": 2600,
+        "fuel": 490,
+        "electricity": 520,
+        "repairs_maintenance": 970,
+        "levies": 230
+      }
+    },
+    {
+      "month": 6,
+      "pl": {
+        "milk_litres": 38400,
+        "milk_price": 0.47,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 18990,
+        "loan_principal_repayments": 489.6,
+        "interest_paid": 81.38,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 1950,
+        "fertiliser": 2280,
+        "vet": 370,
+        "contractor": 5520,
+        "labour": 2600,
+        "fuel": 550,
+        "electricity": 500,
+        "levies": 210,
+        "acres": 3290
+      }
+    },
+    {
+      "month": 7,
+      "pl": {
+        "milk_litres": 33600,
+        "milk_price": 0.48,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 18050,
+        "loan_principal_repayments": 491.21,
+        "interest_paid": 79.77,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 2280,
+        "fertiliser": 1300,
+        "vet": 320,
+        "labour": 2440,
+        "fuel": 450,
+        "electricity": 480,
+        "repairs_maintenance": 2110,
+        "levies": 190
+      }
+    },
+    {
+      "month": 8,
+      "pl": {
+        "milk_litres": 29760,
+        "milk_price": 0.49,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 16130,
+        "loan_principal_repayments": 492.82,
+        "interest_paid": 78.15,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 2600,
+        "fertiliser": 970,
+        "vet": 340,
+        "contractor": 2600,
+        "labour": 2440,
+        "fuel": 440,
+        "electricity": 470,
+        "levies": 160,
+        "other_operating_costs": 490
+      }
+    },
+    {
+      "month": 9,
+      "pl": {
+        "milk_litres": 24960,
+        "milk_price": 0.5,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 14580,
+        "loan_principal_repayments": 494.44,
+        "interest_paid": 76.53,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 3410,
+        "vet": 410,
+        "labour": 2440,
+        "fuel": 410,
+        "electricity": 450,
+        "levies": 140,
+        "cattle_sales": 1380
+      }
+    }
+  ],
+  "prior_year": [
+    {
+      "month": 1,
+      "pl": {
+        "milk_litres": 2780,
+        "milk_price": 0.45,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 1440,
+        "loan_principal_repayments": 458.5,
+        "interest_paid": 112.48,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 7090,
+        "vet": 470,
+        "labour": 2210,
+        "fuel": 360,
+        "electricity": 410,
+        "repairs_maintenance": 320,
+        "levies": 20
+      }
+    },
+    {
+      "month": 2,
+      "pl": {
+        "milk_litres": 12910,
+        "milk_price": 0.45,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 1250,
+        "loan_principal_repayments": 458.5,
+        "interest_paid": 112.48,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 6690,
+        "vet": 1890,
+        "labour": 2990,
+        "fuel": 380,
+        "electricity": 440,
+        "levies": 70,
+        "cattle_sales": 640
+      }
+    },
+    {
+      "month": 3,
+      "pl": {
+        "milk_litres": 28560,
+        "milk_price": 0.46,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 5810,
+        "loan_principal_repayments": 458.5,
+        "interest_paid": 112.48,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 5120,
+        "fertiliser": 3540,
+        "vet": 1420,
+        "labour": 2990,
+        "insurance": 3150,
+        "fuel": 410,
+        "electricity": 470,
+        "rent_lease": 4720,
+        "levies": 160,
+        "cattle_sales": 2560
+      }
+    },
+    {
+      "month": 4,
+      "pl": {
+        "milk_litres": 35950,
+        "milk_price": 0.47,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 13140,
+        "loan_principal_repayments": 458.5,
+        "interest_paid": 112.48,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 2990,
+        "fertiliser": 4090,
+        "vet": 710,
+        "labour": 2680,
+        "fuel": 440,
+        "electricity": 490,
+        "professional_fees": 1180,
+        "levies": 190,
+        "cattle_sales": 1920
+      }
+    },
+    {
+      "month": 5,
+      "pl": {
+        "milk_litres": 39650,
+        "milk_price": 0.46,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 16900,
+        "loan_principal_repayments": 458.5,
+        "interest_paid": 112.48,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 2050,
+        "fertiliser": 3300,
+        "vet": 390,
+        "contractor": 1890,
+        "labour": 2520,
+        "fuel": 470,
+        "electricity": 500,
+        "repairs_maintenance": 940,
+        "levies": 220
+      }
+    },
+    {
+      "month": 6,
+      "pl": {
+        "milk_litres": 36860,
+        "milk_price": 0.45,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 18240,
+        "loan_principal_repayments": 458.5,
+        "interest_paid": 112.48,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 1890,
+        "fertiliser": 2210,
+        "vet": 360,
+        "contractor": 5360,
+        "labour": 2520,
+        "fuel": 530,
+        "electricity": 480,
+        "levies": 200,
+        "acres": 3190
+      }
+    },
+    {
+      "month": 7,
+      "pl": {
+        "milk_litres": 32260,
+        "milk_price": 0.45,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 16590,
+        "loan_principal_repayments": 458.5,
+        "interest_paid": 112.48,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 2210,
+        "fertiliser": 1260,
+        "vet": 320,
+        "labour": 2360,
+        "fuel": 440,
+        "electricity": 470,
+        "repairs_maintenance": 2050,
+        "levies": 180
+      }
+    },
+    {
+      "month": 8,
+      "pl": {
+        "milk_litres": 28560,
+        "milk_price": 0.46,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 14520,
+        "loan_principal_repayments": 458.5,
+        "interest_paid": 112.48,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 2520,
+        "fertiliser": 940,
+        "vet": 330,
+        "contractor": 2520,
+        "labour": 2360,
+        "fuel": 420,
+        "electricity": 450,
+        "levies": 160,
+        "other_operating_costs": 470
+      }
+    },
+    {
+      "month": 9,
+      "pl": {
+        "milk_litres": 23950,
+        "milk_price": 0.47,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 13140,
+        "loan_principal_repayments": 458.5,
+        "interest_paid": 112.48,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 3300,
+        "vet": 390,
+        "labour": 2360,
+        "fuel": 390,
+        "electricity": 440,
+        "levies": 130,
+        "cattle_sales": 1330
+      }
+    },
+    {
+      "month": 10,
+      "pl": {
+        "milk_litres": 18430,
+        "milk_price": 0.48,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 11260,
+        "loan_principal_repayments": 458.5,
+        "interest_paid": 112.48,
+        "household_drawings": 2000,
+        "machinery_equipment_payments": 8250
+      },
+      "lines": {
+        "feed": 4720,
+        "vet": 470,
+        "labour": 2360,
+        "fuel": 380,
+        "electricity": 420,
+        "levies": 110,
+        "cattle_sales": 3200,
+        "biss": 8600
+      }
+    },
+    {
+      "month": 11,
+      "pl": {
+        "milk_litres": 10130,
+        "milk_price": 0.49,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 8850,
+        "loan_principal_repayments": 458.5,
+        "interest_paid": 112.48,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 6310,
+        "vet": 550,
+        "labour": 2210,
+        "fuel": 360,
+        "electricity": 410,
+        "levies": 60,
+        "professional_fees": 940,
+        "cattle_sales": 2130
+      }
+    },
+    {
+      "month": 12,
+      "pl": {
+        "milk_litres": 1820,
+        "milk_price": 0.49,
+        "loan_repayments": 570.98
+      },
+      "cash": {
+        "milk": 4960,
+        "loan_principal_repayments": 458.5,
+        "interest_paid": 112.48,
+        "household_drawings": 2000
+      },
+      "lines": {
+        "feed": 6940,
+        "vet": 390,
+        "labour": 2210,
+        "fuel": 360,
+        "electricity": 410,
+        "levies": 10,
+        "biss": 3690
+      }
+    }
+  ],
+  "loans": [
+    {
+      "id": "loan-working-capital",
+      "name": "Working capital facility",
+      "lender": "Local Credit Union",
+      "rate_type": "Variable",
+      "balance": 15682.4,
+      "annual_rate": 0.0375,
+      "remaining_months": 51,
+      "next_payment": {
+        "year": 2026,
+        "month": 10
+      }
+    },
+    {
+      "id": "loan-machinery",
+      "name": "Machinery loan",
+      "lender": "Agri Finance",
+      "rate_type": "Fixed",
+      "balance": 7400.46,
+      "annual_rate": 0.042,
+      "remaining_months": 33,
+      "next_payment": {
+        "year": 2026,
+        "month": 10
+      },
+      "original_principal": 14000
+    }
+  ],
+  "suppliers": {
+    "currency": "EUR",
+    "total_outstanding": 5610,
+    "overdue": 1150,
+    "suppliers": [
+      {
+        "id": "sup-feed",
+        "name": "GreenFeed Co-op",
+        "category": "Feed",
+        "balance": 2600,
+        "due_date": "2026-10-20",
+        "overdue": false
+      },
+      {
+        "id": "sup-machinery",
+        "name": "Murphy Agri Services",
+        "category": "Repairs",
+        "balance": 1460,
+        "due_date": "2026-10-31",
+        "overdue": false
+      },
+      {
+        "id": "sup-fert",
+        "name": "Valley Fertiliser",
+        "category": "Fertiliser",
+        "balance": 1150,
+        "due_date": "2026-09-30",
+        "overdue": true
+      },
+      {
+        "id": "sup-vet",
+        "name": "Riverside Vet",
+        "category": "Vet",
+        "balance": 400,
+        "due_date": "2026-11-04",
+        "overdue": false
+      }
+    ]
+  },
+  "events": {
+    "currency": "EUR",
+    "year": 2026,
+    "month": 10,
+    "total_in": 24646.67,
+    "total_out": 2880.98,
+    "events": [
+      {
+        "id": "evt-loans",
+        "date": "2026-10-01",
+        "title": "Loan repayments",
+        "direction": "out",
+        "amount": 570.98
+      },
+      {
+        "id": "evt-milk",
+        "date": "2026-10-15",
+        "title": "Milk cheque (September supply)",
+        "direction": "in",
+        "amount": 12480
+      },
+      {
+        "id": "evt-biss",
+        "date": "2026-10-16",
+        "title": "BISS advance payment",
+        "direction": "in",
+        "amount": 8866.67
+      },
+      {
+        "id": "evt-feed",
+        "date": "2026-10-20",
+        "title": "GreenFeed Co-op account",
+        "direction": "out",
+        "amount": 2310
+      },
+      {
+        "id": "evt-culls",
+        "date": "2026-10-28",
+        "title": "Cull cow sale",
+        "direction": "in",
+        "amount": 3300
+      }
+    ]
+  }
+}

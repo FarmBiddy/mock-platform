@@ -3,7 +3,8 @@
 Standalone Next.js prototype of the FarmBiddy farmer app. Demo user Joe Bloggs
 (dairy): monthly farm data lives in the platform, is sent to the external
 **FarmBiddy Financial Engine** over HTTP/JSON, and Farm Financials shows the
-results (monthly P&L, YTD breakdowns, cash balance, loans, suppliers, events).
+results (monthly P&L and forecast, cash, KPIs, vs last year, what-if, loans, borrowing
+capacity), plus bank / advisor / accountant reports and Ask Biddy chats.
 
 This project contains **no financial calculation logic**. All P&L maths live in
 the Financial Engine.
@@ -12,8 +13,8 @@ the Financial Engine.
 
 - Node.js 22+ (or current LTS)
 - npm
-- Financial Engine running separately on `http://127.0.0.1:8000`
-  (e.g. `python run_server.py` in that repository)
+- Python with the engine's requirements (`py` launcher on Windows)
+- The Financial Engine repo next to this one (`../REMOTE-FUNCTIONS`)
 
 ## Setup
 
@@ -29,6 +30,25 @@ NEXT_PUBLIC_FINANCIAL_ENGINE_URL=http://127.0.0.1:8000
 ```
 
 ## Run
+
+The engine runs from a separate checkout of its `main` (a git worktree at `../engine-main`), so
+work in progress in `../REMOTE-FUNCTIONS` never affects the mock. Once:
+
+```bash
+git -C ../REMOTE-FUNCTIONS worktree add --detach ../engine-main origin/main
+```
+
+To pick up a newer engine main later:
+
+```bash
+git -C ../engine-main fetch origin && git -C ../engine-main checkout --detach origin/main
+```
+
+Start both (or use the `engine` and `web` entries in `.claude/launch.json`):
+
+```bash
+py -m uvicorn --app-dir ../engine-main api.app:app --host 127.0.0.1 --port 8000
+```
 
 ```bash
 npm run dev
@@ -49,9 +69,13 @@ data/farms/<user>.json  ->  lib/financials/farm.js (payload builders + lib/marke
 - Loan repayments are not operating costs: they show in Loans and in cash flow.
 - `needs_input` renders a form for exactly the missing fields; answers come back
   as `?<function>:<field>=<value>` and are sent on the next engine call.
-- Engine IDs not live yet (`loan.schedule`, ...) are served from
-  `lib/financial-engine/mocks.js` with the same shape, badged "Coming soon".
+- Engine IDs not live yet can be served from `lib/financial-engine/mocks.js` with the
+  same shape (badged "Coming soon"); none are mocked today. `loan.schedule` needs the
+  engine's `cash-planning` work (on its way to engine main).
 - Suppliers and events are platform data (mock JSON), badged "Platform".
+- Ask Biddy: header box / New Chat → `/chat`. `lib/biddy.js` is the only Biddy client; without `BIDDY_URL`
+  a mock agent (`data/biddy/fixtures.json`) answers by calling the engine itself. Contract:
+  [docs/biddy-contract.md](docs/biddy-contract.md). `npm run check` verifies answers only quote engine figures.
 
 ## Scripts
 
@@ -60,3 +84,4 @@ data/farms/<user>.json  ->  lib/financials/farm.js (payload builders + lib/marke
 | `npm run dev` | Local development    |
 | `npm run build` | Production build   |
 | `npm run lint` | ESLint               |
+| `npm run check` | Biddy figure checks |
