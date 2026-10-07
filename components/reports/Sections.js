@@ -153,7 +153,7 @@ export function Capacity({ c }) {
           ["Tax", -c.tax, { indent: true }],
           ["Repayment capacity", c.repayment_capacity, { strong: true }],
           ["Current loan repayments", c.debt_service],
-          ["Repayment cover", num(c.repayment_cover, 2, "×"), { raw: true }],
+          ["Cover after drawings & tax", num(c.repayment_cover, 2, "×"), { raw: true }],
           c.new_loan && [
             `Largest new loan (${num(c.new_loan.annual_rate * 100, 2, "%")}, ${c.new_loan.term_months} months, cover ${num(c.min_cover, 2, "×")})`,
             c.new_loan.max_principal,
@@ -176,7 +176,7 @@ export function Kpis({ k }) {
     ["Surplus per cow", eur(k.per_cow.operating_surplus)],
     ["Milk per cow", num(k.per_cow.milk_litres, 0, " L")],
     ["Debt per cow", k.debt ? eur(k.debt.per_cow) : "—"],
-    ["Debt service cover", num(k.dscr, 2, "×")],
+    ["Loan cover (to date)", num(k.dscr, 2, "×")],
   ];
   if (k.per_hectare) items.push(["Surplus per hectare", eur(k.per_hectare.operating_surplus)]);
   return (
@@ -271,7 +271,7 @@ export function Sensitivity({ s }) {
               <th className="py-1 text-right font-medium">Surplus</th>
               <th className="py-1 text-right font-medium">Closing cash</th>
               <th className="py-1 text-right font-medium">Lowest cash</th>
-              <th className="py-1 text-right font-medium">Debt cover</th>
+              <th className="py-1 text-right font-medium">Loan cover, full year</th>
               <th className="py-1 text-right font-medium">Break-even (loss / overdraft)</th>
             </tr>
           </thead>

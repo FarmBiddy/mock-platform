@@ -70,7 +70,7 @@ function StressLines({ result, tests }) {
           {s.lowest_cash.amount < 0
             ? `you’d be overdrawn for ${s.overdraft_months} month${s.overdraft_months === 1 ? "" : "s"}, lowest ${money(s.lowest_cash.amount)} in ${monthLabel(s.lowest_cash.period.month)}`
             : `cash stays positive, lowest ${money(s.lowest_cash.amount)} in ${monthLabel(s.lowest_cash.period.month)}`}
-          ; debt cover {times(s.dscr)}.
+          ; loan cover over the full year {times(s.dscr)}.
         </li>
       ))}
     </ul>
@@ -126,7 +126,7 @@ export default function WhatIfCard({ initial, priceSource, year, pro = true, str
       title="What if…?"
       subtitle={
         response.status === "ok" && response.result.shocks_from
-          ? `Changes apply from ${fromLabel(response.result.shocks_from)} (forecast months); earlier months are actual. Surplus, debt cover and 31 Dec cash cover the whole year.`
+          ? `Changes apply from ${fromLabel(response.result.shocks_from)} (forecast months); earlier months are actual. Surplus, loan cover and 31 Dec cash cover the whole year (actual + forecast).`
           : "Stress-test this year: each change is applied to every month of the year."
       }
       badge={<Badge>risk.sensitivity</Badge>}
@@ -162,7 +162,7 @@ export default function WhatIfCard({ initial, priceSource, year, pro = true, str
                   <th className="py-1 text-right font-medium">Cash 31 Dec</th>
                   <th className="py-1 text-right font-medium">Lowest cash{from ? ` (from ${from})` : ""}</th>
                   <th className="py-1 text-right font-medium">Months overdrawn{from ? ` (from ${from})` : ""}</th>
-                  <th className="py-1 text-right font-medium">Debt cover {year}</th>
+                  <th className="py-1 text-right font-medium">Loan cover, full year {year}</th>
                   <th className="py-1 font-medium">
                     <span className="sr-only">Five-year plan</span>
                   </th>

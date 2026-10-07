@@ -27,7 +27,7 @@ export default function BorrowCard({ response, params, describePath }) {
                 <dd className="tabular-nums">{formatCurrency(r.debt_service, r.currency)}</dd>
               </div>
               <div className="flex justify-between gap-3">
-                <dt>Cover today / lender minimum</dt>
+                <dt>Cover after drawings &amp; tax / lender minimum</dt>
                 <dd className="tabular-nums">
                   {times(r.repayment_cover)} / {times(r.min_cover)}
                 </dd>

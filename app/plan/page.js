@@ -199,7 +199,7 @@ export default async function PlanPage({ searchParams }) {
                 Year 1 milk price {fmt(plan.years[0].kpis.milk_price_c)}c/L comes from{" "}
                 {price != null ? "the figure entered above" : `the ${preset.label} preset${role === "owner" ? ` set by ${ADVISOR.name}` : ""}`}. This year’s forecast on Farm
                 Financials uses {fmt(forecastMilkPrice(farm, farm.actual_through_month + 1) * 100)}c/L ({farm.market?.milk_price != null ? "set in Farm Data" : "market price feed"}).
-                Loan cover here is per plan year ({monthLabel(plan.years[0].period.from.month)}–{monthLabel(plan.years[0].period.to.month)}), not the calendar year.
+                Loan cover here is for each plan year ({monthLabel(plan.years[0].period.from.month)}–{monthLabel(plan.years[0].period.to.month)}), not the calendar year.
               </p>
 
               {role === "owner" && (
@@ -252,7 +252,7 @@ export default async function PlanPage({ searchParams }) {
                         ["Investment spend", (y) => (y.cash.capex ? formatCurrency(y.cash.capex) : "—")],
                         ["Cash at year end", (y) => formatCurrency(y.cash.closing), "strong", (y) => y.flags.negative_cash],
                         ["Debt at year end", (y) => formatCurrency(y.debt.closing_balance)],
-                        ["Loan cover (DSCR)", (y) => (y.debt.dscr == null ? "—" : `${fmt(y.debt.dscr, 2)}×`), null, (y) => y.flags.below_min_cover],
+                        ["Loan cover", (y) => (y.debt.dscr == null ? "—" : `${fmt(y.debt.dscr, 2)}×`), null, (y) => y.flags.below_min_cover],
                         ["Net worth", (y) => formatCurrency(y.balance_sheet.net_worth), "strong"],
                       ].map(([label, cell, kind, bad]) => (
                         <tr key={label} className={kind === "strong" ? "font-semibold" : kind === "assumption" ? "text-stone-500" : "text-stone-700"}>
