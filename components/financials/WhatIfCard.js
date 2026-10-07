@@ -6,7 +6,8 @@ import { Badge, Card } from "@/components/ui";
 import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
 import Link from "next/link";
-import { ALL_SCENARIOS, STRESS_TESTS, WHAT_IF_PRESETS, planHref } from "@/lib/financials/whatIf";
+import { setTier } from "@/app/session-actions";
+import { ALL_SCENARIOS, FREE_SCENARIO_IDS, STRESS_TESTS, WHAT_IF_PRESETS, planHref } from "@/lib/financials/whatIf";
 
 const cents = (v) => `${v.toLocaleString("en-IE", { maximumFractionDigits: 1 })}c/L`;
 const times = (v) => (v == null ? "—" : `${v.toLocaleString("en-IE", { maximumFractionDigits: 1 })}×`);
@@ -80,12 +81,34 @@ function StressLines({ result }) {
  * What-if panel on risk.sensitivity. The farmer ticks presets; the server runs them against the same
  * months as the page. Every figure is the engine's.
  */
-/** `priceSource`: where the forecast milk price comes from; `year`: the calendar year the columns cover. */
-export default function WhatIfCard({ initial, priceSource, year }) {
+/**
+ * `priceSource`: where the forecast milk price comes from; `year`: the calendar year the columns cover.
+ * `pro`: false → only the Free scenarios can be ticked; the rest show locked (the server enforces it too).
+ */
+export default function WhatIfCard({ initial, priceSource, year, pro = true }) {
   const [picked, setPicked] = useState([]);
   const [response, setResponse] = useState(initial);
   const [pending, startTransition] = useTransition();
   const from = response.status === "ok" ? fromLabel(response.result.shocks_from) : null;
+
+  const chip = (p, extra = null) => {
+    const locked = !pro && !FREE_SCENARIO_IDS.includes(p.id);
+    return (
+      <button
+        key={p.id}
+        aria-pressed={picked.includes(p.id)}
+        disabled={locked}
+        title={locked ? "Pro" : undefined}
+        onClick={() => toggle(p.id)}
+        className={`rounded-full px-3 py-1.5 text-sm ring-1 disabled:cursor-not-allowed disabled:bg-stone-50 disabled:text-stone-400 disabled:ring-stone-200 ${
+          picked.includes(p.id) ? "bg-emerald-800 text-white ring-emerald-800" : "bg-white text-stone-700 ring-stone-300 hover:bg-stone-50"
+        }`}
+      >
+        {locked && "🔒 "}
+        {p.label} {extra}
+      </button>
+    );
+  };
 
   function toggle(id) {
     const next = picked.includes(id) ? picked.filter((p) => p !== id) : [...picked, id];
@@ -113,34 +136,20 @@ export default function WhatIfCard({ initial, priceSource, year }) {
           <BreakEvens result={response.result} priceSource={priceSource} />
 
           <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Scenarios">
-            {WHAT_IF_PRESETS.map((p) => (
-              <button
-                key={p.id}
-                aria-pressed={picked.includes(p.id)}
-                onClick={() => toggle(p.id)}
-                className={`rounded-full px-3 py-1.5 text-sm ring-1 ${
-                  picked.includes(p.id) ? "bg-emerald-800 text-white ring-emerald-800" : "bg-white text-stone-700 ring-stone-300 hover:bg-stone-50"
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
+            {WHAT_IF_PRESETS.map((p) => chip(p))}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2" role="group" aria-label="Stress tests">
             <span className="text-xs font-medium text-stone-500">Stress tests:</span>
-            {STRESS_TESTS.map((p) => (
-              <button
-                key={p.id}
-                aria-pressed={picked.includes(p.id)}
-                onClick={() => toggle(p.id)}
-                className={`rounded-full px-3 py-1.5 text-sm ring-1 ${
-                  picked.includes(p.id) ? "bg-emerald-800 text-white ring-emerald-800" : "bg-white text-stone-700 ring-stone-300 hover:bg-stone-50"
-                }`}
-              >
-                {p.label} <span className="text-xs opacity-75">· {p.note}</span>
-              </button>
-            ))}
+            {STRESS_TESTS.map((p) => chip(p, <span className="text-xs opacity-75">· {p.note}</span>))}
           </div>
+          {!pro && (
+            <form action={setTier} className="mt-3 flex flex-wrap items-center gap-2 text-xs text-stone-600">
+              <span>🔒 Pro: every scenario, bank-style stress tests and the 5-year plan.</span>
+              <button name="tier" value="pro" className="rounded-full bg-emerald-800 px-3 py-1 font-medium text-white hover:bg-emerald-900">
+                Try Pro (demo)
+              </button>
+            </form>
+          )}
 
           <div className={`mt-4 overflow-x-auto transition-opacity ${pending ? "opacity-50" : ""}`} aria-busy={pending}>
             <table className="w-full min-w-[36rem] text-sm tabular-nums">

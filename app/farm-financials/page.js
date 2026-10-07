@@ -154,13 +154,12 @@ export default async function FarmFinancialsPage({ searchParams }) {
       {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} />}
 
       {risk && (
-        <ProLock pro={pro} title="What if milk drops or feed goes up?" value="Test price and cost shocks on your own cash and surplus before they happen.">
-          <WhatIfCard
-            initial={risk}
-            year={farm.year}
-            priceSource={farm.market?.milk_price != null ? (role === "owner" ? "set by your advisor" : "set in Farm Data") : "market price feed"}
-          />
-        </ProLock>
+        <WhatIfCard
+          initial={risk}
+          year={farm.year}
+          pro={pro}
+          priceSource={farm.market?.milk_price != null ? (role === "owner" ? "set by your advisor" : "set in Farm Data") : "market price feed"}
+        />
       )}
 
       {tornado && <TornadoCard response={tornado} rank={rank} />}
