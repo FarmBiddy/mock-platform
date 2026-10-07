@@ -13,6 +13,8 @@ import { ADVISOR, getViewer } from "@/lib/session";
 import { readShares } from "@/lib/shared";
 import { readNotes } from "@/lib/notes";
 import BiddyBox from "@/components/BiddyBox";
+import StressEditor from "@/components/StressEditor";
+import { readStressTests } from "@/lib/stress";
 import { suggestionsFor } from "@/lib/biddy-suggestions";
 
 export const metadata = { title: "Portfolio · FarmBiddy" };
@@ -41,7 +43,8 @@ const byRisk = (a, b) =>
   count(b.items, "warn") - count(a.items, "warn") ||
   (a.lowest?.closing_cash ?? Infinity) - (b.lowest?.closing_cash ?? Infinity);
 
-export default async function PortfolioPage() {
+export default async function PortfolioPage({ searchParams }) {
+  const { stress } = await searchParams;
   const viewer = await getViewer();
   if (viewer.role !== "advisor") redirect("/dashboard");
   if (viewer.farmId) redirect("/portfolio/leave"); // close the open client first
@@ -158,6 +161,8 @@ export default async function PortfolioPage() {
         </div>
         <p className="mt-4 text-xs text-stone-500">Portfolio averages and benchmarks need an engine function — until then clients are shown side by side.</p>
       </Card>
+
+      <StressEditor tests={await readStressTests()} status={["saved", "reset"].includes(stress) ? stress : null} />
     </div>
   );
 }

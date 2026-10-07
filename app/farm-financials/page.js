@@ -13,6 +13,7 @@ import BorrowCard from "@/components/financials/BorrowCard";
 import SourcesToggle from "@/components/SourcesToggle";
 import ProLock from "@/components/ProLock";
 import { getViewer } from "@/lib/session";
+import { readStressTests } from "@/lib/stress";
 import { buildRiskInput, isProjected, runFarm } from "@/lib/financials/farm";
 import { riskSensitivity, riskTornado } from "@/lib/financial-engine/client";
 import TornadoCard from "@/components/financials/TornadoCard";
@@ -158,6 +159,8 @@ export default async function FarmFinancialsPage({ searchParams }) {
           initial={risk}
           year={farm.year}
           pro={pro}
+          stressTests={await readStressTests()}
+          stressBy={role === "owner" ? "your advisor" : null}
           priceSource={farm.market?.milk_price != null ? (role === "owner" ? "set by your advisor" : "set in Farm Data") : "market price feed"}
         />
       )}

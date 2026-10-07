@@ -7,7 +7,7 @@ import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
 import Link from "next/link";
 import { setTier } from "@/app/session-actions";
-import { ALL_SCENARIOS, FREE_SCENARIO_IDS, STRESS_TESTS, WHAT_IF_PRESETS, planHref } from "@/lib/financials/whatIf";
+import { FREE_SCENARIO_IDS, WHAT_IF_PRESETS, planHref } from "@/lib/financials/whatIf";
 
 const cents = (v) => `${v.toLocaleString("en-IE", { maximumFractionDigits: 1 })}c/L`;
 const times = (v) => (v == null ? "—" : `${v.toLocaleString("en-IE", { maximumFractionDigits: 1 })}×`);
@@ -58,8 +58,8 @@ function BreakEvens({ result, priceSource }) {
 }
 
 /** One plain sentence per stress test the farmer ran, from the engine's scenario result. */
-function StressLines({ result }) {
-  const ran = STRESS_TESTS.map((t) => [t, result.scenarios.find((s) => s.name === t.label)]).filter(([, s]) => s);
+function StressLines({ result, tests }) {
+  const ran = tests.map((t) => [t, result.scenarios.find((s) => s.name === t.label)]).filter(([, s]) => s);
   if (!ran.length) return null;
   const money = (v) => formatCurrency(v, result.currency);
   return (
@@ -84,8 +84,10 @@ function StressLines({ result }) {
 /**
  * `priceSource`: where the forecast milk price comes from; `year`: the calendar year the columns cover.
  * `pro`: false → only the Free scenarios can be ticked; the rest show locked (the server enforces it too).
+ * `stressTests`: the advisor's stress tests (label, generated note, shock).
  */
-export default function WhatIfCard({ initial, priceSource, year, pro = true }) {
+export default function WhatIfCard({ initial, priceSource, year, pro = true, stressTests, stressBy = null }) {
+  const scenarios = [...WHAT_IF_PRESETS, ...stressTests];
   const [picked, setPicked] = useState([]);
   const [response, setResponse] = useState(initial);
   const [pending, startTransition] = useTransition();
@@ -139,8 +141,8 @@ export default function WhatIfCard({ initial, priceSource, year, pro = true }) {
             {WHAT_IF_PRESETS.map((p) => chip(p))}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2" role="group" aria-label="Stress tests">
-            <span className="text-xs font-medium text-stone-500">Stress tests:</span>
-            {STRESS_TESTS.map((p) => chip(p, <span className="text-xs opacity-75">· {p.note}</span>))}
+            <span className="text-xs font-medium text-stone-500">Stress tests{stressBy ? ` from ${stressBy}` : ""}:</span>
+            {stressTests.map((p) => chip(p, <span className="text-xs opacity-75">· {p.note}</span>))}
           </div>
           {!pro && (
             <form action={setTier} className="mt-3 flex flex-wrap items-center gap-2 text-xs text-stone-600">
@@ -178,9 +180,9 @@ export default function WhatIfCard({ initial, priceSource, year, pro = true }) {
                     <td className="py-1.5 text-right">{s.overdraft_months}</td>
                     <td className={`py-1.5 text-right ${s.dscr != null && s.dscr < 1 ? "text-red-700" : ""}`}>{times(s.dscr)}</td>
                     <td className="py-1.5 pl-3 text-right">
-                      {ALL_SCENARIOS.some((p) => p.label === s.name) && (
+                      {scenarios.some((p) => p.label === s.name) && (
                         <Link
-                          href={planHref(ALL_SCENARIOS.find((p) => p.label === s.name).shock, response.result.milk_price_c)}
+                          href={planHref(scenarios.find((p) => p.label === s.name).shock, response.result.milk_price_c)}
                           className="whitespace-nowrap text-xs font-medium text-emerald-800 hover:underline"
                         >
                           If it lasts: 5 years →
@@ -192,7 +194,7 @@ export default function WhatIfCard({ initial, priceSource, year, pro = true }) {
               </tbody>
             </table>
           </div>
-          <StressLines result={response.result} />
+          <StressLines result={response.result} tests={stressTests} />
         </>
       )}
     </Card>
