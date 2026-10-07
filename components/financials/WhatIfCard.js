@@ -5,7 +5,7 @@ import { runWhatIf } from "@/app/farm-financials/actions";
 import { Badge, Card } from "@/components/ui";
 import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
-import { WHAT_IF_PRESETS } from "@/lib/financials/whatIf";
+import { STRESS_TESTS, WHAT_IF_PRESETS } from "@/lib/financials/whatIf";
 
 const cents = (v) => `${v.toLocaleString("en-IE", { maximumFractionDigits: 1 })}c/L`;
 const times = (v) => (v == null ? "—" : `${v.toLocaleString("en-IE", { maximumFractionDigits: 1 })}×`);
@@ -50,6 +50,26 @@ function BreakEvens({ result }) {
             You’d go <strong>overdrawn below {cents(overdrawnBelow)}</strong>.
           </li>
         ))}
+    </ul>
+  );
+}
+
+/** One plain sentence per stress test the farmer ran, from the engine's scenario result. */
+function StressLines({ result }) {
+  const ran = STRESS_TESTS.map((t) => [t, result.scenarios.find((s) => s.name === t.label)]).filter(([, s]) => s);
+  if (!ran.length) return null;
+  const money = (v) => formatCurrency(v, result.currency);
+  return (
+    <ul className="mt-4 space-y-1 text-sm">
+      {ran.map(([t, s]) => (
+        <li key={t.id} className={s.lowest_cash.amount < 0 ? "text-amber-900" : ""}>
+          <strong>{t.label}</strong> ({t.note}):{" "}
+          {s.lowest_cash.amount < 0
+            ? `you’d be overdrawn for ${s.overdraft_months} month${s.overdraft_months === 1 ? "" : "s"}, lowest ${money(s.lowest_cash.amount)} in ${monthLabel(s.lowest_cash.period.month)}`
+            : `cash stays positive, lowest ${money(s.lowest_cash.amount)} in ${monthLabel(s.lowest_cash.period.month)}`}
+          ; debt cover {times(s.dscr)}.
+        </li>
+      ))}
     </ul>
   );
 }
@@ -103,6 +123,21 @@ export default function WhatIfCard({ initial }) {
               </button>
             ))}
           </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2" role="group" aria-label="Stress tests">
+            <span className="text-xs font-medium text-stone-500">Stress tests:</span>
+            {STRESS_TESTS.map((p) => (
+              <button
+                key={p.id}
+                aria-pressed={picked.includes(p.id)}
+                onClick={() => toggle(p.id)}
+                className={`rounded-full px-3 py-1.5 text-sm ring-1 ${
+                  picked.includes(p.id) ? "bg-emerald-800 text-white ring-emerald-800" : "bg-white text-stone-700 ring-stone-300 hover:bg-stone-50"
+                }`}
+              >
+                {p.label} <span className="text-xs opacity-75">· {p.note}</span>
+              </button>
+            ))}
+          </div>
 
           <div className={`mt-4 overflow-x-auto transition-opacity ${pending ? "opacity-50" : ""}`} aria-busy={pending}>
             <table className="w-full min-w-[36rem] text-sm tabular-nums">
@@ -132,6 +167,7 @@ export default function WhatIfCard({ initial }) {
               </tbody>
             </table>
           </div>
+          <StressLines result={response.result} />
         </>
       )}
     </Card>

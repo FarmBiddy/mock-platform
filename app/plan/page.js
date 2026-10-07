@@ -40,6 +40,7 @@ export default async function PlanPage({ searchParams }) {
   const preset = presets[presetKey];
   const price = param(sp.price, 0.2, 1);
   const inflation = param(sp.infl, -5, 15);
+  const rates = param(sp.rates, -3, 10); // pp vs today, variable loans only (ADR-0043)
   const invIds = [].concat(sp.inv ?? []);
   const investments = (farm.plan_investments ?? []).filter((i) => invIds.includes(i.id));
 
@@ -47,6 +48,7 @@ export default async function PlanPage({ searchParams }) {
     ...preset.assumptions,
     ...(price == null ? {} : { milk_price: [price] }),
     ...(inflation == null ? {} : { cost_inflation_pct: Array(YEARS).fill(inflation) }),
+    ...(rates == null ? {} : { interest_rate_shift_pp: [rates] }),
   };
 
   const { inputs, cf } = await runFarm(farm);
@@ -66,7 +68,7 @@ export default async function PlanPage({ searchParams }) {
   const lowDscr = lowest((y) => y.debt.dscr);
   const lowCash = lowest((y) => y.cash.closing);
   // Same view for the advisor: the plan URL with this scenario, and engine figures as a one-line summary.
-  const query = new URLSearchParams([["s", presetKey], ...(price == null ? [] : [["price", price]]), ...(inflation == null ? [] : [["infl", inflation]]), ...investments.map((i) => ["inv", i.id])]);
+  const query = new URLSearchParams([["s", presetKey], ...(price == null ? [] : [["price", price]]), ...(inflation == null ? [] : [["infl", inflation]]), ...(rates == null ? [] : [["rates", rates]]), ...investments.map((i) => ["inv", i.id])]);
   const share =
     plan &&
     new URLSearchParams({
@@ -113,6 +115,10 @@ export default async function PlanPage({ searchParams }) {
               <label className="block">
                 Cost inflation <span className="text-xs text-stone-400">% a year, blank = scenario</span>
                 <input name="infl" type="number" step="0.5" min="-5" max="15" defaultValue={inflation ?? ""} className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2" />
+              </label>
+              <label className="block">
+                Variable interest rates <span className="text-xs text-stone-400">± points vs today, blank = scenario</span>
+                <input name="rates" type="number" step="0.25" min="-3" max="10" defaultValue={rates ?? ""} className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2" />
               </label>
             </div>
             <div className="space-y-3 text-sm">
@@ -199,6 +205,7 @@ export default async function PlanPage({ searchParams }) {
                       {[
                         ["Milk price", (y) => `${fmt(y.kpis.milk_price_c)}c/L`, "assumption"],
                         ["Cost inflation", (y) => `${fmt(y.assumptions_used.cost_inflation_pct)}%`, "assumption"],
+                        ["Variable rates", (y) => (y.assumptions_used.interest_rate_shift_pp ? `${y.assumptions_used.interest_rate_shift_pp > 0 ? "+" : ""}${fmt(y.assumptions_used.interest_rate_shift_pp, 2)} pp` : "as today"), "assumption"],
                         ["Cows", (y) => fmt(y.kpis.milking_cows, 0), "assumption"],
                         ["Milk sold", (y) => `${fmt(y.pl.milk_litres / 1000, 0)}k L`],
                         ["Income", (y) => formatCurrency(y.pl.revenue.total)],

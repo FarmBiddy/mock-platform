@@ -26,7 +26,7 @@
     "_note": "Advisor / market presets for plan.projection (the engine holds no market opinions). Lists are per year, index 0 = year 1; prices and amounts carry forward.",
     "cautious": {
       "label": "Cautious",
-      "note": "Milk at 42c for two years, then 44c; costs +3% a year",
+      "note": "Milk at 42c for two years, then 44c; costs +3% a year; variable rates +1 pp",
       "assumptions": {
         "milk_price": [
           0.42,
@@ -45,6 +45,9 @@
         ],
         "tax": [
           8000
+        ],
+        "interest_rate_shift_pp": [
+          1
         ]
       }
     },
