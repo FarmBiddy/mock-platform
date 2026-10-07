@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { cleanEdits, currentFarmId, editCookie, ownerOf, readEdits, ruleFor, valueAtPath } from "@/lib/farm-edits";
+import { cleanEdits, currentFarmId, editCookie, effectiveValue, ownerOf, readEdits, ruleFor } from "@/lib/farm-edits";
 import { forecastMilkPrice, getFarm } from "@/lib/financials/farm";
 import { getViewer } from "@/lib/session";
 
@@ -34,12 +34,17 @@ export async function saveFarmData(formData) {
     const baseValue =
       path === "market.milk_price"
         ? forecastMilkPrice(base, base.actual_through_month + 1) // default comes from the market adapter
-        : (valueAtPath(base, path) ?? (path.startsWith("months.") ? 0 : null));
+        : (effectiveValue(base, path) ?? (path.startsWith("months.") ? 0 : null));
     if (value === baseValue) delete edits[path];
     else edits[path] = value;
   }
   const clean = cleanEdits(edits);
   (await cookies()).set(editCookie(farmId), JSON.stringify(clean), OPTS);
+  if (formData.get("_return") === "plan") {
+    // preset form on the Plan page: back to the scenario being viewed
+    const s = formData.get("s");
+    redirect(`/plan?presets=saved${/^(cautious|base|optimistic)$/.test(s) ? `&s=${s}` : ""}`);
+  }
   const month = Number(formData.get("_month"));
   redirect(`/farm-data?saved=1${month ? `&m=${month}` : ""}`);
 }

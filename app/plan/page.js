@@ -3,9 +3,10 @@ import { Badge, Card } from "@/components/ui";
 import { Stat } from "@/components/financials/PlatformCards";
 import PlanCharts from "@/components/plan/PlanCharts";
 import { planProjection } from "@/lib/financial-engine/client";
-import { loadFarm } from "@/lib/farm-edits";
+import { loadFarm, readEdits } from "@/lib/farm-edits";
+import PresetEditor, { presetSummary } from "@/components/plan/PresetEditor";
 import ProLock from "@/components/ProLock";
-import { getViewer } from "@/lib/session";
+import { ADVISOR, getViewer } from "@/lib/session";
 import { buildPlanInput, runFarm } from "@/lib/financials/farm";
 import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
@@ -33,6 +34,9 @@ export default async function PlanPage({ searchParams }) {
   const presets = farm.plan_presets ?? {};
   const presetKeys = Object.keys(presets).filter((k) => !k.startsWith("_"));
   const presetKey = presetKeys.includes(one(sp.s)) ? one(sp.s) : "base";
+  // Presets the advisor changed for this farm (their own notes no longer describe them).
+  const edits = Object.keys(await readEdits(farm.profile.id));
+  const editedKeys = presetKeys.filter((k) => edits.some((p) => p.startsWith(`plan_presets.${k}.`)));
   const preset = presets[presetKey];
   const price = param(sp.price, 0.2, 1);
   const inflation = param(sp.infl, -5, 15);
@@ -85,13 +89,18 @@ export default async function PlanPage({ searchParams }) {
         <div className="space-y-6">
           <form className="grid gap-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200/70 lg:grid-cols-[2fr_1fr_1fr]">
             <fieldset>
-              <legend className="text-sm font-medium">Scenario</legend>
+              <legend className="text-sm font-medium">
+                Scenario
+                {role === "owner" && <span className="font-normal text-stone-500"> · presets from {ADVISOR.name}, your advisor</span>}
+              </legend>
               <div className="mt-2 grid gap-2 sm:grid-cols-3">
                 {presetKeys.map((k) => (
                   <label key={k} className={`cursor-pointer rounded-xl p-3 text-sm ring-1 ${k === presetKey ? "bg-emerald-50 ring-emerald-600" : "ring-stone-200 hover:bg-stone-50"}`}>
                     <input type="radio" name="s" value={k} defaultChecked={k === presetKey} className="mr-2 accent-emerald-700" />
                     <span className="font-medium">{presets[k].label}</span>
-                    <span className="mt-1 block text-xs text-stone-500">{presets[k].note}</span>
+                    <span className="mt-1 block text-xs text-stone-500">
+                      {editedKeys.includes(k) ? `${presetSummary(farm, k)} · updated by ${role === "owner" ? "your advisor" : "you"}` : presets[k].note}
+                    </span>
                   </label>
                 ))}
               </div>
@@ -120,6 +129,17 @@ export default async function PlanPage({ searchParams }) {
               <button className="w-full rounded-lg bg-emerald-800 px-4 py-2 font-medium text-white hover:bg-emerald-900">Update plan</button>
             </div>
           </form>
+
+          {role === "advisor" && (
+            <>
+              {one(sp.presets) === "saved" && (
+                <p role="status" className="rounded-xl bg-emerald-50 px-4 py-2 text-sm text-emerald-900 ring-1 ring-emerald-200">
+                  Presets saved — the plan below and {farm.profile.name.split(" ")[0]}’s Plan use them now.
+                </p>
+              )}
+              <PresetEditor farm={farm} presetKeys={presetKeys} editedKeys={editedKeys} current={presetKey} />
+            </>
+          )}
 
           {!plan ? (
             <Card title="Couldn’t build the plan">
