@@ -34,7 +34,7 @@ export default function MobileNav({ advisor }) {
           More
         </summary>
         <div className="absolute right-0 bottom-full mb-2 flex w-48 flex-col gap-0.5 rounded-xl bg-[#173a2b] p-2 shadow-lg">
-          {nav.slice(PRIMARY).map(([label, href]) => item(label, href, "text-left text-sm px-3"))}
+          {[...nav.slice(PRIMARY), ["What’s next", "/whats-next"]].map(([label, href]) => item(label, href, "text-left text-sm px-3"))}
         </div>
       </details>
     </nav>

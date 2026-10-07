@@ -52,6 +52,10 @@ export default function Sidebar({ advisor, context }) {
           );
         })}
       </nav>
+
+      <Link href="/whats-next" className={`mt-auto px-3 text-xs ${pathname === "/whats-next" ? "text-white" : "text-[#8fb39c] hover:text-white"}`}>
+        What’s next →
+      </Link>
     </aside>
   );
 }
