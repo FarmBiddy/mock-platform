@@ -1,13 +1,10 @@
 import { loadFarm } from "@/lib/farm-edits";
-import { Badge, Card, COLORS } from "@/components/ui";
+import { Badge, Card } from "@/components/ui";
 import EngineGate, { withProvided } from "@/components/financials/EngineGate";
 import MonthlyChart from "@/components/financials/MonthlyChart";
 import CashChart from "@/components/financials/CashChart";
-import Breakdown, { StackedBreakdown, expenseRows, incomeRows } from "@/components/financials/Breakdown";
-import { EventsCard, LoansCard, Stat, SupplierDebtCard } from "@/components/financials/PlatformCards";
-import StatusTiles from "@/components/financials/StatusTiles";
+import { LoansCard, Stat } from "@/components/financials/PlatformCards";
 import KpiCard from "@/components/financials/KpiCard";
-import Change from "@/components/financials/Change";
 import WhatIfCard from "@/components/financials/WhatIfCard";
 import BorrowCard from "@/components/financials/BorrowCard";
 import SourcesToggle from "@/components/SourcesToggle";
@@ -32,7 +29,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
   const farm = await loadFarm();
   const { pro, role } = await getViewer();
 
-  const { inputs, loans, plf, pl, kpi, plc, cap, cff, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
+  const { inputs, loans, plf, pl, kpi, cap, cff, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
 
   const asOf = monthLabel(farm.actual_through_month);
   // Say which month / loan a nested needs_input path points at, from the request that was sent.
@@ -43,14 +40,11 @@ export default async function FarmFinancialsPage({ searchParams }) {
     return item?.month ? `${monthLabel(item.month)}${item.year !== farm.year ? ` ${item.year}` : ""}` : null;
   };
   const forecastIssue = [plf, cff].find((r) => r && r.status !== "ok");
-  // This year vs last is Pro.
-  const vs = pro && plc?.status === "ok" ? plc.result : null;
   // Base case only on load; the panel re-runs with the scenarios the farmer ticks.
   const risk = cf.status === "ok" ? await riskSensitivity(buildRiskInput(farm, inputs)) : null;
   // Advisor tool: which drivers move this client most (same months and loans as the what-if).
   const rank = params.rank === "operating_surplus" ? "operating_surplus" : "closing_cash";
   const tornado = role === "advisor" && cf.status === "ok" ? await riskTornado({ ...buildRiskInput(farm, inputs), rank_by: rank }) : null;
-  const vsLabel = `vs Jan–${asOf} ${farm.year - 1}`;
   const tag = (m) => ({ label: monthLabel(m.period.month), projected: isProjected(farm, m.period.month) });
 
   return (
@@ -70,8 +64,6 @@ export default async function FarmFinancialsPage({ searchParams }) {
           Showing actual months only — the forecast couldn’t run ({forecastIssue.error?.message ?? "missing figures"}).
         </p>
       )}
-
-      <StatusTiles pl={pl} cf={cf} loans={loans} kpi={kpi} plc={pro ? plc : null} farm={farm} />
 
       <EngineGate response={pl} params={params} describePath={describePath}>
         {({ months }) => (
@@ -167,49 +159,12 @@ export default async function FarmFinancialsPage({ searchParams }) {
 
       {tornado && <TornadoCard response={tornado} rank={rank} />}
 
-      {/* Two balanced columns: income + loans on the left, expenses + borrowing capacity on the right. */}
+      {/* Loans and what more could be borrowed, side by side. */}
       <div className="grid items-start gap-6 lg:grid-cols-2">
-        <div className="space-y-6">
-          {pl.status === "ok" && (
-            <Card title="Income YTD" subtitle={`Jan–${asOf}`} badge={<Badge>pl.months · ytd</Badge>}>
-              <StackedBreakdown
-                rows={incomeRows(pl.result.ytd.revenue)}
-                total={pl.result.ytd.revenue.total}
-                currency={pl.result.currency}
-                change={vs && <Change leaf={vs.revenue.total} label={vsLabel} />}
-              />
-              {vs && vs.revenue.milk.change !== 0 && (
-                <p className="mt-3 text-xs text-stone-500">
-                  Milk income {vs.revenue.milk.change > 0 ? "up" : "down"} {formatCurrency(Math.abs(vs.revenue.milk.change))}: {formatCurrency(vs.milk.volume_effect)} from{" "}
-                  {vs.milk.litres.change >= 0 ? "more" : "fewer"} litres, {formatCurrency(vs.milk.price_effect)} from{" "}
-                  {vs.milk.price_c.change >= 0 ? "a better" : "a lower"} price.
-                </p>
-              )}
-            </Card>
-          )}
-          <LoansCard response={loans} loans={farm.loans} params={params} describePath={describePath} />
-        </div>
-        <div className="space-y-6">
-          {pl.status === "ok" && (
-            <Card title="Expenses YTD" subtitle={`Operating costs, Jan–${asOf}. Loan repayments excluded.`} badge={<Badge>pl.months · ytd</Badge>}>
-              <Breakdown
-                rows={expenseRows(pl.result.ytd.costs.lines)}
-                total={pl.result.ytd.costs.total}
-                color={COLORS.costs}
-                currency={pl.result.currency}
-                change={vs && <Change leaf={vs.costs.total} label={vsLabel} upIsGood={false} />}
-              />
-            </Card>
-          )}
-          <ProLock pro={pro} title="How much more could you borrow?" value="The loan your surplus can carry at the bank’s cover, worked out before you ask.">
-            <BorrowCard response={cap} params={params} describePath={describePath} />
-          </ProLock>
-        </div>
-      </div>
-
-      <div className="grid items-start gap-6 lg:grid-cols-2">
-        <EventsCard data={farm.events} />
-        <SupplierDebtCard data={farm.suppliers} />
+        <LoansCard response={loans} loans={farm.loans} params={params} describePath={describePath} />
+        <ProLock pro={pro} title="How much more could you borrow?" value="The loan your surplus can carry at the bank’s cover, worked out before you ask.">
+          <BorrowCard response={cap} params={params} describePath={describePath} />
+        </ProLock>
       </div>
     </div>
   );

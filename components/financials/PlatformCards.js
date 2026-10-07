@@ -58,29 +58,6 @@ export function LoansCard({ response, loans, params, describePath }) {
 
 const formatRate = (rate) => `${(rate * 100).toLocaleString("en-IE", { maximumFractionDigits: 2 })}%`;
 
-export function SupplierDebtCard({ data }) {
-  return (
-    <Card title="Outstanding Supplier Debt" badge={<Badge tone="platform">Platform · mock</Badge>}>
-      <div className="mb-4 flex gap-6 text-sm">
-        <Stat label="Total owed" value={formatCurrency(data.total_outstanding, data.currency)} />
-        <Stat label="Overdue" value={formatCurrency(data.overdue, data.currency)} danger={data.overdue > 0} />
-      </div>
-      <ul className="divide-y divide-stone-100 text-sm">
-        {data.suppliers.map((s) => (
-          <li key={s.id} className="flex items-center justify-between gap-3 py-2">
-            <div>
-              <p className="font-medium">{s.name}</p>
-              <p className={`text-xs ${s.overdue ? "font-medium text-red-700" : "text-stone-500"}`}>
-                {s.overdue ? "Overdue since" : "Due"} {dayLabel(s.due_date)} · {s.category}
-              </p>
-            </div>
-            <span className="tabular-nums font-medium">{formatCurrency(s.balance, data.currency)}</span>
-          </li>
-        ))}
-      </ul>
-    </Card>
-  );
-}
 
 export function EventsCard({ data }) {
   return (
