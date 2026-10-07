@@ -5,9 +5,10 @@ import { usePathname } from "next/navigation";
 import { NAV, PORTFOLIO } from "./nav";
 import { useChats } from "@/lib/chats";
 
-export default function Sidebar({ advisor }) {
+/** `context`: only this viewer's chats (chats saved before contexts existed were the owner's). */
+export default function Sidebar({ advisor, context }) {
   const pathname = usePathname();
-  const chats = useChats();
+  const chats = useChats().filter((c) => (c.context ?? "owner:joe-bloggs") === context);
 
   return (
     <aside className="flex w-60 shrink-0 print:hidden flex-col gap-6 bg-[#173a2b] px-4 py-6 text-[#dfe9df] max-lg:hidden">

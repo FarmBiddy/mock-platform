@@ -6,11 +6,13 @@ import { askBiddy } from "@/app/chat/actions";
 import { getChat, newId, saveChat, useChats } from "@/lib/chats";
 import ResultView from "./ResultView";
 
-const SUGGESTIONS = ["Will I have cash for the December feed bill?", "Am I profitable this year?", "How much more could I borrow?"];
-const AGENT_LABELS = { finance: "Finance agent", schemes: "Schemes agent" };
+const AGENT_LABELS = { finance: "Finance agent", schemes: "Schemes agent", copilot: "Advisor copilot" };
 
-/** One chat with Biddy. State lives in the chat store; `initialQuestion` comes from the header box. */
-export default function ChatView({ chatId, initialQuestion }) {
+/**
+ * One chat with Biddy. State lives in the chat store; `initialQuestion` comes from the header box.
+ * `context` tags new chats with who asked about what (see chatContext), so each keeps its own list.
+ */
+export default function ChatView({ chatId, initialQuestion, context, suggestions }) {
   const router = useRouter();
   const chat = useChats().find((c) => c.id === chatId);
   const pending = chat?.messages.at(-1)?.status === "pending";
@@ -22,7 +24,7 @@ export default function ChatView({ chatId, initialQuestion }) {
     if (!q) return;
     let current = chatId && getChat(chatId);
     if (!current) {
-      current = { id: newId(), title: q.slice(0, 60), createdAt: new Date().toISOString(), messages: [] };
+      current = { id: newId(), title: q.slice(0, 60), createdAt: new Date().toISOString(), context, messages: [] };
       router.replace(`/chat?c=${current.id}`);
     }
     const history = current.messages.filter((m) => m.status !== "pending");
@@ -73,7 +75,7 @@ export default function ChatView({ chatId, initialQuestion }) {
         <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200/70">
           <p className="text-sm text-stone-600">Ask about your farm’s money. Biddy answers with figures from the Financial Engine.</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {SUGGESTIONS.map((s) => (
+            {suggestions.map((s) => (
               <button key={s} onClick={() => send(s)} className="rounded-full bg-emerald-50 px-3 py-1.5 text-sm text-emerald-900 ring-1 ring-emerald-200 hover:bg-emerald-100">
                 {s}
               </button>

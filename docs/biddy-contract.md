@@ -68,6 +68,29 @@ Farmer asks in "Ask Biddy" (new chat or an existing one)
   Projected loan and milk-cheque lines depend on earlier results (loan.schedule → pl.months → cf.months); the
   platform sends them already filled in.
 
+### Who is asking: farmer or advisor (copilot)
+
+Every request also says who asks and about what. The platform sets these from the session, never from the browser.
+
+```json
+"viewer": { "role": "advisor", "name": "Mary Ryan", "org": "Ryan Agri Advisory" },
+"scope": "farm"
+```
+
+| `viewer.role` | `scope` | Sent | Example questions |
+|---|---|---|---|
+| `owner` | `farm` | `farm` + `inputs` (their farm) | "Will I have cash for the December feed bill?" |
+| `advisor` | `farm` | `farm` + `inputs` of the client that is open | "Summarise this farm for my next visit", "Draft the summary for the advisor report" |
+| `advisor` | `portfolio` | `clients: [{ farm, inputs }]`, one per client, no top-level `farm` / `inputs` | "Which clients need attention this month?", "Compare cost of production across my clients" |
+
+- `farm` now also carries `owner` (the farmer's name), so the copilot can say "Joe" rather than "you".
+- For the advisor Biddy is a **copilot**: it talks to a professional about a client, in the third person, and may draft
+  report text. It still never recalculates: figures come from engine results on the inputs sent.
+- Comparing or averaging across clients is a calculation: run each client's engine functions on its own `inputs`
+  (a portfolio benchmark function in the engine would be the clean way, not yet available).
+- The mock agent answers `scope: "portfolio"` with `agent_unavailable` (agent `"copilot"`); farm-scope advisor
+  questions go through the same fixtures as the farmer's.
+
 ## Response — always one of three
 
 ```json

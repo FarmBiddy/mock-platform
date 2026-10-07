@@ -12,6 +12,8 @@ import { formatMarginPct } from "@/lib/format/percent";
 import { ADVISOR, getViewer } from "@/lib/session";
 import { readShares } from "@/lib/shared";
 import { readNotes } from "@/lib/notes";
+import BiddyBox from "@/components/BiddyBox";
+import { suggestionsFor } from "@/lib/biddy-suggestions";
 
 export const metadata = { title: "Portfolio · FarmBiddy" };
 
@@ -40,8 +42,9 @@ const byRisk = (a, b) =>
   (a.lowest?.closing_cash ?? Infinity) - (b.lowest?.closing_cash ?? Infinity);
 
 export default async function PortfolioPage() {
-  const { role, farmId } = await getViewer();
-  if (role !== "advisor") redirect("/dashboard");
+  const viewer = await getViewer();
+  if (viewer.role !== "advisor") redirect("/dashboard");
+  if (viewer.farmId) redirect("/portfolio/leave"); // close the open client first
   const rows = (await Promise.all(ADVISOR.clients.map(clientRow))).sort(byRisk);
   const shares = await readShares();
   const notes = await readNotes();
@@ -55,6 +58,8 @@ export default async function PortfolioPage() {
           {ADVISOR.name} · {ADVISOR.org} · {rows.length} dairy clients, riskiest first
         </p>
       </div>
+
+      <BiddyBox placeholder="Ask Biddy about your clients…" questions={suggestionsFor(viewer)} />
 
       {shares.length > 0 && (
         <Card title="Shared by your clients" subtitle="Views a client prepared and sent you, newest first">
@@ -112,7 +117,6 @@ export default async function PortfolioPage() {
                     </form>
                     <p className="text-xs text-stone-500">
                       {farm.profile.name} · {farm.profile.county} · {farm.milking_cows ?? "?"} cows
-                      {farm.profile.id === farmId && " · open"}
                       {farm.editCount > 0 && " · edited"}
                       {shares.some((sh) => sh.farm === farm.profile.id) && <span className="ml-1 rounded-full bg-sky-100 px-1.5 text-sky-800">shared</span>}
                     </p>

@@ -1,4 +1,6 @@
 import ChatView from "@/components/chat/ChatView";
+import { suggestionsFor } from "@/lib/biddy-suggestions";
+import { chatContext, getViewer } from "@/lib/session";
 
 export const metadata = { title: "Biddy · FarmBiddy" };
 
@@ -6,5 +8,13 @@ export const metadata = { title: "Biddy · FarmBiddy" };
 export default async function ChatPage({ searchParams }) {
   const { c, q } = await searchParams;
   const one = (v) => (Array.isArray(v) ? v[0] : v);
-  return <ChatView chatId={one(c) ?? null} initialQuestion={one(q)?.slice(0, 1000) ?? null} />;
+  const viewer = await getViewer();
+  return (
+    <ChatView
+      chatId={one(c) ?? null}
+      initialQuestion={one(q)?.slice(0, 1000) ?? null}
+      context={chatContext(viewer)}
+      suggestions={suggestionsFor(viewer)}
+    />
+  );
 }
