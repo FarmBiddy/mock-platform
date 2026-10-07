@@ -1,5 +1,6 @@
-/** Advisor-only entry, shown first in the nav when viewing as the advisor. */
-export const PORTFOLIO = ["Portfolio", "/portfolio"];
+/** Advisor-only entries: the portfolio first, the decision tools after the Plan. */
+const PORTFOLIO = ["Portfolio", "/portfolio"];
+const DECISIONS = ["Decisions", "/decisions"];
 
 export const NAV = [
   ["Dashboard", "/dashboard"],
@@ -17,3 +18,5 @@ export const NAV = [
   ["Suppliers", "/suppliers"],
   ["Farm Actions", "/farm-actions"],
 ];
+
+export const navFor = (advisor) => (advisor ? [PORTFOLIO, ...NAV.flatMap((item) => (item[1] === "/plan" ? [item, DECISIONS] : [item]))] : NAV);

@@ -129,6 +129,11 @@ export default async function PlanPage({ searchParams }) {
                   <span>
                     {i.name}
                     <span className="block text-xs text-stone-500">{i.note}</span>
+                    {role === "advisor" && (
+                      <Link href={`/decisions?inv=${i.id}`} className="text-xs font-medium text-emerald-800 hover:underline">
+                        Is it worth it? Appraise it →
+                      </Link>
+                    )}
                   </span>
                 </label>
               ))}

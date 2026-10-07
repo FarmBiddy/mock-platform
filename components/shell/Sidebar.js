@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV, PORTFOLIO } from "./nav";
+import { navFor } from "./nav";
 import { useChats } from "@/lib/chats";
 
 /** `context`: only this viewer's chats (chats saved before contexts existed were the owner's). */
@@ -36,7 +36,7 @@ export default function Sidebar({ advisor, context }) {
       </div>
 
       <nav className="flex flex-col gap-0.5">
-        {(advisor ? [PORTFOLIO, ...NAV] : NAV).map(([label, href]) => {
+        {navFor(advisor).map(([label, href]) => {
           const active = pathname === href;
           return (
             <Link
