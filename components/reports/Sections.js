@@ -147,7 +147,7 @@ export function Capacity({ c }) {
     <Section title="Repayment capacity" note={`${period(c)} (actual + forecast) · after household drawings and tax for the year`}>
       <Rows
         rows={[
-          ["Operating Surplus", c.surplus],
+          ["Operating Surplus", c.operating_surplus],
           c.off_farm_income ? ["Off-farm income", c.off_farm_income, { indent: true }] : null,
           ["Household drawings", -c.drawings, { indent: true }],
           ["Tax", -c.tax, { indent: true }],
@@ -172,13 +172,13 @@ export function Kpis({ k }) {
     ["Cost of production", num(k.per_litre_c.costs, 1, "c/L")],
     ["Income per litre", num(k.per_litre_c.revenue, 1, "c/L")],
     ["Gross margin", num(k.per_litre_c.gross_margin, 1, "c/L")],
-    ["Surplus per litre", num(k.per_litre_c.surplus, 1, "c/L")],
-    ["Surplus per cow", eur(k.per_cow.surplus)],
+    ["Surplus per litre", num(k.per_litre_c.operating_surplus, 1, "c/L")],
+    ["Surplus per cow", eur(k.per_cow.operating_surplus)],
     ["Milk per cow", num(k.per_cow.milk_litres, 0, " L")],
     ["Debt per cow", k.debt ? eur(k.debt.per_cow) : "—"],
     ["Debt service cover", num(k.dscr, 2, "×")],
   ];
-  if (k.per_hectare) items.push(["Surplus per hectare", eur(k.per_hectare.surplus)]);
+  if (k.per_hectare) items.push(["Surplus per hectare", eur(k.per_hectare.operating_surplus)]);
   return (
     <Section title="Key figures" note={`${period(k)} · ${k.milking_cows} cows`}>
       <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
@@ -279,7 +279,7 @@ export function Sensitivity({ s }) {
             {s.scenarios.map((sc) => (
               <tr key={sc.name}>
                 <td className="py-1">{sc.name === "base" ? "As forecast" : sc.name}</td>
-                <td className="py-1 text-right">{eur(sc.surplus)}</td>
+                <td className="py-1 text-right">{eur(sc.operating_surplus)}</td>
                 <td className="py-1 text-right">{eur(sc.closing_cash)}</td>
                 <td className={`py-1 text-right ${sc.lowest_cash.amount < 0 ? "text-red-700" : ""}`}>
                   {eur(sc.lowest_cash.amount)} {monthLabel(sc.lowest_cash.period.month)}

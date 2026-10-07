@@ -7,7 +7,7 @@ import { loadFarm, readEdits } from "@/lib/farm-edits";
 import PresetEditor, { presetSummary } from "@/components/plan/PresetEditor";
 import ProLock from "@/components/ProLock";
 import { ADVISOR, getViewer } from "@/lib/session";
-import { buildPlanInput, runFarm } from "@/lib/financials/farm";
+import { buildPlanInput, forecastMilkPrice, runFarm } from "@/lib/financials/farm";
 import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
 
@@ -40,6 +40,10 @@ export default async function PlanPage({ searchParams }) {
   const preset = presets[presetKey];
   const price = param(sp.price, 0.2, 1);
   const inflation = param(sp.infl, -5, 15);
+  const rates = param(sp.rates, -3, 10); // pp vs today, variable loans only (ADR-0043)
+  // Carried over from a What-if scenario ("If it lasts"): year-1 changes that then stay.
+  const carried = { feed: param(sp.feed, -50, 200), fertiliser: param(sp.fert, -50, 200), herd: param(sp.herd, -50, 50) };
+  const lineShocks = Object.fromEntries(["feed", "fertiliser"].filter((l) => carried[l] != null).map((l) => [l, [carried[l]]]));
   const invIds = [].concat(sp.inv ?? []);
   const investments = (farm.plan_investments ?? []).filter((i) => invIds.includes(i.id));
 
@@ -47,6 +51,9 @@ export default async function PlanPage({ searchParams }) {
     ...preset.assumptions,
     ...(price == null ? {} : { milk_price: [price] }),
     ...(inflation == null ? {} : { cost_inflation_pct: Array(YEARS).fill(inflation) }),
+    ...(rates == null ? {} : { interest_rate_shift_pp: [rates] }),
+    ...(Object.keys(lineShocks).length ? { lines_inflation_pct: { ...preset.assumptions.lines_inflation_pct, ...lineShocks } } : {}),
+    ...(carried.herd == null ? {} : { herd_pct: [carried.herd] }),
   };
 
   const { inputs, cf } = await runFarm(farm);
@@ -66,7 +73,8 @@ export default async function PlanPage({ searchParams }) {
   const lowDscr = lowest((y) => y.debt.dscr);
   const lowCash = lowest((y) => y.cash.closing);
   // Same view for the advisor: the plan URL with this scenario, and engine figures as a one-line summary.
-  const query = new URLSearchParams([["s", presetKey], ...(price == null ? [] : [["price", price]]), ...(inflation == null ? [] : [["infl", inflation]]), ...investments.map((i) => ["inv", i.id])]);
+  const carriedParams = [["feed", carried.feed], ["fert", carried.fertiliser], ["herd", carried.herd]].filter(([, v]) => v != null);
+  const query = new URLSearchParams([["s", presetKey], ...(price == null ? [] : [["price", price]]), ...(inflation == null ? [] : [["infl", inflation]]), ...(rates == null ? [] : [["rates", rates]]), ...carriedParams, ...investments.map((i) => ["inv", i.id])]);
   const share =
     plan &&
     new URLSearchParams({
@@ -87,7 +95,24 @@ export default async function PlanPage({ searchParams }) {
 
       <ProLock pro={pro} title="Plan the next five years" value="See where cash, debt cover and net worth go under cautious, base or optimistic prices — and what a new parlour would do.">
         <div className="space-y-6">
+          {carriedParams.length > 0 && (
+            <p className="flex flex-wrap items-center gap-2 rounded-xl bg-sky-50 px-4 py-2 text-sm text-sky-900 ring-1 ring-sky-200">
+              From the What-if, lasting from year 1:{" "}
+              {carriedParams.map(([k, v]) => (
+                <span key={k} className="rounded-full bg-white px-2 py-0.5 text-xs ring-1 ring-sky-200">
+                  {{ feed: "Feed", fert: "Fertiliser", herd: "Herd" }[k]} {v > 0 ? "+" : ""}
+                  {v}%
+                </span>
+              ))}
+              <Link href={`/plan?${new URLSearchParams(query.entries().filter(([k]) => !["feed", "fert", "herd"].includes(k)))}`} className="text-xs underline">
+                Remove
+              </Link>
+            </p>
+          )}
           <form className="grid gap-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200/70 lg:grid-cols-[2fr_1fr_1fr]">
+            {carriedParams.map(([k, v]) => (
+              <input key={k} type="hidden" name={k} value={v} />
+            ))}
             <fieldset>
               <legend className="text-sm font-medium">
                 Scenario
@@ -114,6 +139,10 @@ export default async function PlanPage({ searchParams }) {
                 Cost inflation <span className="text-xs text-stone-400">% a year, blank = scenario</span>
                 <input name="infl" type="number" step="0.5" min="-5" max="15" defaultValue={inflation ?? ""} className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2" />
               </label>
+              <label className="block">
+                Variable interest rates <span className="text-xs text-stone-400">± points vs today, blank = scenario</span>
+                <input name="rates" type="number" step="0.25" min="-3" max="10" defaultValue={rates ?? ""} className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2" />
+              </label>
             </div>
             <div className="space-y-3 text-sm">
               <p className="font-medium">Investments</p>
@@ -123,6 +152,11 @@ export default async function PlanPage({ searchParams }) {
                   <span>
                     {i.name}
                     <span className="block text-xs text-stone-500">{i.note}</span>
+                    {role === "advisor" && (
+                      <Link href={`/decisions?inv=${i.id}`} className="text-xs font-medium text-emerald-800 hover:underline">
+                        Is it worth it? Appraise it →
+                      </Link>
+                    )}
                   </span>
                 </label>
               ))}
@@ -157,9 +191,16 @@ export default async function PlanPage({ searchParams }) {
                   label="Weakest loan cover"
                   value={lowDscr.debt.dscr == null ? "—" : `${fmt(lowDscr.debt.dscr, 2)}×`}
                   danger={lowDscr.flags.below_min_cover}
-                  hint={`Year ${lowDscr.year}${farm.new_loan_terms?.min_cover ? ` · lender minimum ${fmt(farm.new_loan_terms.min_cover, 2)}×` : ""}`}
+                  hint={`Year ${lowDscr.year} (${ym(lowDscr.period.from)}–${ym(lowDscr.period.to)})${farm.new_loan_terms?.min_cover ? ` · lender minimum ${fmt(farm.new_loan_terms.min_cover, 2)}×` : ""}`}
                 />
               </div>
+
+              <p className="text-xs text-stone-500">
+                Year 1 milk price {fmt(plan.years[0].kpis.milk_price_c)}c/L comes from{" "}
+                {price != null ? "the figure entered above" : `the ${preset.label} preset${role === "owner" ? ` set by ${ADVISOR.name}` : ""}`}. This year’s forecast on Farm
+                Financials uses {fmt(forecastMilkPrice(farm, farm.actual_through_month + 1) * 100)}c/L ({farm.market?.milk_price != null ? "set in Farm Data" : "market price feed"}).
+                Loan cover here is per plan year ({monthLabel(plan.years[0].period.from.month)}–{monthLabel(plan.years[0].period.to.month)}), not the calendar year.
+              </p>
 
               {role === "owner" && (
                 <Link href={`/share?${share}`} className="flex items-center justify-between gap-3 rounded-2xl bg-sky-50 px-5 py-3 text-sm text-sky-900 ring-1 ring-sky-200 hover:bg-sky-100">
@@ -199,6 +240,7 @@ export default async function PlanPage({ searchParams }) {
                       {[
                         ["Milk price", (y) => `${fmt(y.kpis.milk_price_c)}c/L`, "assumption"],
                         ["Cost inflation", (y) => `${fmt(y.assumptions_used.cost_inflation_pct)}%`, "assumption"],
+                        ["Variable rates", (y) => (y.assumptions_used.interest_rate_shift_pp ? `${y.assumptions_used.interest_rate_shift_pp > 0 ? "+" : ""}${fmt(y.assumptions_used.interest_rate_shift_pp, 2)} pp` : "as today"), "assumption"],
                         ["Cows", (y) => fmt(y.kpis.milking_cows, 0), "assumption"],
                         ["Milk sold", (y) => `${fmt(y.pl.milk_litres / 1000, 0)}k L`],
                         ["Income", (y) => formatCurrency(y.pl.revenue.total)],

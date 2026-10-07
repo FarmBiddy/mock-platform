@@ -87,7 +87,7 @@ export default async function ReportsPage({ searchParams }) {
             <Headline
               items={[
                 ["Net profit before tax", formatCurrency(rep.profit.net_profit_before_tax), `${fmt(rep.profit.net_margin_pct)}% net margin`],
-                ["Debt service cover", rep.kpis.dscr == null ? "—" : `${fmt(rep.kpis.dscr, 2)}×`, "Operating Surplus / repayments"],
+                ["Debt service cover", rep.kpis.dscr == null ? "—" : `${fmt(rep.kpis.dscr, 2)}×`, `Operating Surplus / repayments, ${period(rep.period)}`],
                 ["Net worth", formatCurrency(rep.balance_sheet.net_worth), `${fmt(rep.balance_sheet.ratios.equity_pct)}% equity`],
                 ["Borrowing headroom", capacity?.new_loan ? formatCurrency(capacity.new_loan.max_principal) : "—", "Largest new loan, full year"],
               ]}
@@ -119,7 +119,7 @@ export default async function ReportsPage({ searchParams }) {
       )}
 
       <p className="text-xs text-stone-400">
-        Figures calculated by the FarmBiddy Financial Engine from the farm’s records. Projections are estimates.
+        Figures calculated by the FarmBiddy Financial Engine{response.meta?.engine_version ? ` ${response.meta.engine_version}` : ""} from the farm’s records. Projections are estimates.
       </p>
     </div>
   );

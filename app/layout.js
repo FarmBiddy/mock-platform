@@ -5,7 +5,8 @@ import Link from "next/link";
 import ViewAs from "@/components/shell/ViewAs";
 import { getFarm } from "@/lib/financials/farm";
 import { readEdits } from "@/lib/farm-edits";
-import { OWNER_FARM, getViewer } from "@/lib/session";
+import { OWNER_FARM, chatContext, getViewer } from "@/lib/session";
+import { suggestionsFor } from "@/lib/biddy-suggestions";
 import "./globals.css";
 
 const sans = DM_Sans({ variable: "--font-sans", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
@@ -16,14 +17,15 @@ export const metadata = {
 };
 
 export default async function RootLayout({ children }) {
-  const { role, farmId, tier } = await getViewer();
+  const viewer = await getViewer();
+  const { role, farmId, tier } = viewer;
   const edited = farmId ? Object.keys(await readEdits(farmId)).length : 0;
   const client = role === "advisor" && farmId ? getFarm(farmId).profile : null;
 
   return (
     <html lang="en" className={`${sans.variable} h-full antialiased`}>
       <body className="flex min-h-full bg-[#eef1ec] font-[family-name:var(--font-sans)] text-stone-900">
-        <Sidebar advisor={role === "advisor"} />
+        <Sidebar advisor={role === "advisor"} context={chatContext(viewer)} />
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex items-center gap-3 print:hidden border-b border-stone-200 bg-white px-4 py-3 sm:gap-4 sm:px-6">
             <span className="text-lg font-semibold tracking-tight text-[#173a2b] lg:hidden">FarmBiddy</span>
@@ -35,7 +37,7 @@ export default async function RootLayout({ children }) {
                 required
                 maxLength={1000}
                 className="w-full bg-transparent outline-none placeholder:text-stone-400"
-                placeholder="Ask Biddy — “Will I have cash for the December feed bill?”"
+                placeholder={`Ask Biddy — “${suggestionsFor(viewer)[0]}”`}
                 aria-label="Ask Biddy"
               />
             </form>

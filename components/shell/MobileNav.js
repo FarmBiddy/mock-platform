@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NAV, PORTFOLIO } from "./nav";
+import { navFor } from "./nav";
 
 const PRIMARY = ["/portfolio", "/dashboard", "/farm-financials", "/events", "/tasks"];
 
 /** Bottom bar for phones (sidebar is hidden below lg). "More" is a native <details> sheet. */
 export default function MobileNav({ advisor }) {
   const pathname = usePathname();
-  const nav = advisor ? [PORTFOLIO, ...NAV] : NAV;
+  const nav = navFor(advisor);
   const item = (label, href, extra = "") => (
     <Link
       key={href}

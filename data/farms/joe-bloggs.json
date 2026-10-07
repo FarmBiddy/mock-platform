@@ -16,7 +16,7 @@
   "new_loan_terms": { "annual_rate": 0.055, "term_months": 84, "min_cover": 1.25 },
   "plan_presets": {
     "_note": "Advisor / market presets for plan.projection (the engine holds no market opinions). Lists are per year, index 0 = year 1; prices and amounts carry forward.",
-    "cautious": { "label": "Cautious", "note": "Milk at 42c for two years, then 44c; costs +3% a year", "assumptions": { "milk_price": [0.42, 0.42, 0.44], "cost_inflation_pct": [3, 3, 3, 3, 3], "drawings": [30000], "tax": [10000] } },
+    "cautious": { "label": "Cautious", "note": "Milk at 42c for two years, then 44c; costs +3% a year; variable rates +1 pp", "assumptions": { "milk_price": [0.42, 0.42, 0.44], "cost_inflation_pct": [3, 3, 3, 3, 3], "interest_rate_shift_pp": [1], "drawings": [30000], "tax": [10000] } },
     "base": { "label": "Base", "note": "Milk at 47c; costs +2% a year", "assumptions": { "milk_price": [0.47], "cost_inflation_pct": [2, 2, 2, 2, 2], "drawings": [30000], "tax": [12000] } },
     "optimistic": { "label": "Optimistic", "note": "Milk at 50c; costs +2% a year; yield +1% a year", "assumptions": { "milk_price": [0.5], "cost_inflation_pct": [2, 2, 2, 2, 2], "yield_pct": [1, 1, 1, 1, 1], "drawings": [30000], "tax": [14000] } }
   },

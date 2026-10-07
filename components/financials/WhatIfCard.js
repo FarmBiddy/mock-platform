@@ -5,7 +5,8 @@ import { runWhatIf } from "@/app/farm-financials/actions";
 import { Badge, Card } from "@/components/ui";
 import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
-import { WHAT_IF_PRESETS } from "@/lib/financials/whatIf";
+import Link from "next/link";
+import { ALL_SCENARIOS, STRESS_TESTS, WHAT_IF_PRESETS, planHref } from "@/lib/financials/whatIf";
 
 const cents = (v) => `${v.toLocaleString("en-IE", { maximumFractionDigits: 1 })}c/L`;
 const times = (v) => (v == null ? "—" : `${v.toLocaleString("en-IE", { maximumFractionDigits: 1 })}×`);
@@ -17,7 +18,7 @@ const fromLabel = (from) => (from ? monthLabel(from.month) : null);
  * Break-even sentences for the base case, straight from the engine (null = not computable).
  * With shocks_from, break-evens only look at the months from that point (ADR-0040).
  */
-function BreakEvens({ result }) {
+function BreakEvens({ result, priceSource }) {
   const base = result.scenarios[0];
   const { surplus_milk_price_c: lossBelow, cash_milk_price_c: overdrawnBelow } = base.break_even;
   const price = result.milk_price_c;
@@ -27,7 +28,8 @@ function BreakEvens({ result }) {
   return (
     <ul className="space-y-1 text-sm">
       <li>
-        Milk is {from ? "forecast" : "averaging"} at <strong>{cents(price)}</strong> {span}.
+        Milk is {from ? "forecast" : "averaging"} at <strong>{cents(price)}</strong> {span}
+        {priceSource && <span className="text-stone-500"> ({priceSource})</span>}.
       </li>
       {lossBelow != null &&
         (lossBelow > 0 ? (
@@ -54,11 +56,32 @@ function BreakEvens({ result }) {
   );
 }
 
+/** One plain sentence per stress test the farmer ran, from the engine's scenario result. */
+function StressLines({ result }) {
+  const ran = STRESS_TESTS.map((t) => [t, result.scenarios.find((s) => s.name === t.label)]).filter(([, s]) => s);
+  if (!ran.length) return null;
+  const money = (v) => formatCurrency(v, result.currency);
+  return (
+    <ul className="mt-4 space-y-1 text-sm">
+      {ran.map(([t, s]) => (
+        <li key={t.id} className={s.lowest_cash.amount < 0 ? "text-amber-900" : ""}>
+          <strong>{t.label}</strong> ({t.note}):{" "}
+          {s.lowest_cash.amount < 0
+            ? `you’d be overdrawn for ${s.overdraft_months} month${s.overdraft_months === 1 ? "" : "s"}, lowest ${money(s.lowest_cash.amount)} in ${monthLabel(s.lowest_cash.period.month)}`
+            : `cash stays positive, lowest ${money(s.lowest_cash.amount)} in ${monthLabel(s.lowest_cash.period.month)}`}
+          ; debt cover {times(s.dscr)}.
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /**
  * What-if panel on risk.sensitivity. The farmer ticks presets; the server runs them against the same
  * months as the page. Every figure is the engine's.
  */
-export default function WhatIfCard({ initial }) {
+/** `priceSource`: where the forecast milk price comes from; `year`: the calendar year the columns cover. */
+export default function WhatIfCard({ initial, priceSource, year }) {
   const [picked, setPicked] = useState([]);
   const [response, setResponse] = useState(initial);
   const [pending, startTransition] = useTransition();
@@ -87,7 +110,7 @@ export default function WhatIfCard({ initial }) {
         <p className="text-sm text-stone-500">Couldn’t run the scenarios: {response.error?.message ?? "missing figures"}.</p>
       ) : (
         <>
-          <BreakEvens result={response.result} />
+          <BreakEvens result={response.result} priceSource={priceSource} />
 
           <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Scenarios">
             {WHAT_IF_PRESETS.map((p) => (
@@ -103,35 +126,64 @@ export default function WhatIfCard({ initial }) {
               </button>
             ))}
           </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2" role="group" aria-label="Stress tests">
+            <span className="text-xs font-medium text-stone-500">Stress tests:</span>
+            {STRESS_TESTS.map((p) => (
+              <button
+                key={p.id}
+                aria-pressed={picked.includes(p.id)}
+                onClick={() => toggle(p.id)}
+                className={`rounded-full px-3 py-1.5 text-sm ring-1 ${
+                  picked.includes(p.id) ? "bg-emerald-800 text-white ring-emerald-800" : "bg-white text-stone-700 ring-stone-300 hover:bg-stone-50"
+                }`}
+              >
+                {p.label} <span className="text-xs opacity-75">· {p.note}</span>
+              </button>
+            ))}
+          </div>
 
           <div className={`mt-4 overflow-x-auto transition-opacity ${pending ? "opacity-50" : ""}`} aria-busy={pending}>
             <table className="w-full min-w-[36rem] text-sm tabular-nums">
               <thead className="text-left text-xs text-stone-500">
                 <tr>
                   <th className="py-1 font-medium">Scenario</th>
-                  <th className="py-1 text-right font-medium">Surplus (full year)</th>
+                  <th className="py-1 text-right font-medium">Surplus {year}</th>
                   <th className="py-1 text-right font-medium">Cash 31 Dec</th>
                   <th className="py-1 text-right font-medium">Lowest cash{from ? ` (from ${from})` : ""}</th>
                   <th className="py-1 text-right font-medium">Months overdrawn{from ? ` (from ${from})` : ""}</th>
-                  <th className="py-1 text-right font-medium">Debt cover</th>
+                  <th className="py-1 text-right font-medium">Debt cover {year}</th>
+                  <th className="py-1 font-medium">
+                    <span className="sr-only">Five-year plan</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {response.result.scenarios.map((s) => (
                   <tr key={s.name} className={s.name === "base" ? "font-medium" : ""}>
                     <td className="py-1.5">{s.name === "base" ? "As forecast" : s.name}</td>
-                    <td className={`py-1.5 text-right ${s.surplus < 0 ? "text-red-700" : ""}`}>{formatCurrency(s.surplus, response.result.currency)}</td>
+                    <td className={`py-1.5 text-right ${s.operating_surplus < 0 ? "text-red-700" : ""}`}>{formatCurrency(s.operating_surplus, response.result.currency)}</td>
                     <td className={`py-1.5 text-right ${s.closing_cash < 0 ? "text-red-700" : ""}`}>{formatCurrency(s.closing_cash, response.result.currency)}</td>
                     <td className={`py-1.5 text-right ${s.lowest_cash.amount < 0 ? "text-red-700" : ""}`}>
                       {formatCurrency(s.lowest_cash.amount, response.result.currency)} <span className="text-xs text-stone-500">{monthLabel(s.lowest_cash.period.month)}</span>
                     </td>
                     <td className="py-1.5 text-right">{s.overdraft_months}</td>
                     <td className={`py-1.5 text-right ${s.dscr != null && s.dscr < 1 ? "text-red-700" : ""}`}>{times(s.dscr)}</td>
+                    <td className="py-1.5 pl-3 text-right">
+                      {ALL_SCENARIOS.some((p) => p.label === s.name) && (
+                        <Link
+                          href={planHref(ALL_SCENARIOS.find((p) => p.label === s.name).shock, response.result.milk_price_c)}
+                          className="whitespace-nowrap text-xs font-medium text-emerald-800 hover:underline"
+                        >
+                          If it lasts: 5 years →
+                        </Link>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          <StressLines result={response.result} />
         </>
       )}
     </Card>

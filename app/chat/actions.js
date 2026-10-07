@@ -3,6 +3,7 @@
 import { ask } from "@/lib/biddy";
 import { runFarm } from "@/lib/financials/farm";
 import { loadFarm } from "@/lib/farm-edits";
+import { ADVISOR, getViewer } from "@/lib/session";
 import { cashChartData, surplusChartData } from "@/lib/financials/views";
 
 const MAX_QUESTION = 1000;
@@ -11,6 +12,8 @@ const MAX_HISTORY = 20;
 /**
  * Ask Biddy from a chat. Everything from the browser is untrusted: trimmed and capped here.
  * The platform builds the request (farm profile + engine inputs); Biddy's agent calls the engine.
+ * Who is asking comes from the session, never from the browser: the owner about their farm, the advisor
+ * about the client that is open (scope "farm") or about all clients from the portfolio (scope "portfolio").
  */
 export async function askBiddy({ chatId, messages, question, screen }) {
   const q = String(question ?? "").trim().slice(0, MAX_QUESTION);
@@ -21,30 +24,45 @@ export async function askBiddy({ chatId, messages, question, screen }) {
     .filter((m) => (m?.role === "user" || m?.role === "biddy") && typeof m.text === "string")
     .map((m) => ({ role: m.role, text: m.text.slice(0, MAX_QUESTION * 4), ...(m.agent ? { agent: String(m.agent) } : {}) }));
 
-  const farm = await loadFarm();
-  const { inputs } = await runFarm(farm);
+  const { role, farmId } = await getViewer();
   const now = new Date();
-
-  const response = await ask({
+  const request = {
     conversation: { id: String(chatId ?? "").slice(0, 64), messages: history },
     question: q,
     as_of: { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() },
     screen: { page: String(screen?.page ?? "chat").slice(0, 64), card: screen?.card ? String(screen.card).slice(0, 64) : null },
-    farm: {
-      id: farm.profile.id,
-      name: farm.profile.farm_name,
-      enterprise: farm.profile.enterprise,
-      currency: "EUR",
-      actual_through_month: farm.actual_through_month,
-    },
-    inputs,
-  });
+    viewer: role === "advisor" ? { role, name: ADVISOR.name, org: ADVISOR.org } : { role },
+  };
+
+  if (role === "advisor" && !farmId) {
+    // Portfolio copilot: every client with the same engine inputs its pages use.
+    const clients = await Promise.all(
+      ADVISOR.clients.map(async (id) => {
+        const f = await loadFarm(id);
+        return { farm: farmInfo(f), inputs: (await runFarm(f)).inputs };
+      }),
+    );
+    return ask({ ...request, scope: "portfolio", clients });
+  }
+
+  const farm = await loadFarm();
+  const { inputs } = await runFarm(farm);
+  const response = await ask({ ...request, scope: "farm", farm: farmInfo(farm), inputs });
 
   if (response.status === "answer") {
     response.answer.results = response.answer.results.map((r) => ({ ...r, view: toView(farm, r) }));
   }
   return response;
 }
+
+const farmInfo = (farm) => ({
+  id: farm.profile.id,
+  name: farm.profile.farm_name,
+  owner: farm.profile.name,
+  enterprise: farm.profile.enterprise,
+  currency: "EUR",
+  actual_through_month: farm.actual_through_month,
+});
 
 /** Ready-to-render data for each result's `show`, using the same mappings as the Financials page. */
 function toView(farm, { show, response }) {

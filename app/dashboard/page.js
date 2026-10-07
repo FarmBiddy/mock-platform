@@ -6,16 +6,17 @@ import { Card } from "@/components/ui";
 import { attention } from "@/lib/financials/attention";
 import { runFarm } from "@/lib/financials/farm";
 import { ADVISOR, getViewer } from "@/lib/session";
+import BiddyBox from "@/components/BiddyBox";
+import { suggestionsFor } from "@/lib/biddy-suggestions";
 import { NOTE_MAX, readNotes } from "@/lib/notes";
 import { saveNote } from "@/app/session-actions";
 
 export const metadata = { title: "Dashboard · FarmBiddy" };
 
-const QUESTIONS = ["Will I have cash for the December feed bill?", "Am I profitable this year?", "How much more could I borrow?"];
-
 export default async function DashboardPage() {
   const farm = await loadFarm();
-  const { role, pro } = await getViewer();
+  const viewer = await getViewer();
+  const { role, pro } = viewer;
   const note = role === "advisor" ? ((await readNotes())[farm.profile.id] ?? "") : null;
   const results = await runFarm(farm);
   const items = attention(farm, results);
@@ -35,26 +36,7 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <section className="rounded-2xl bg-[#173a2b] p-5 text-white shadow-sm">
-        <form action="/chat" className="flex gap-2 rounded-full bg-white p-1.5">
-          <input
-            name="q"
-            required
-            maxLength={1000}
-            placeholder="Ask Biddy about your farm’s money…"
-            aria-label="Ask Biddy"
-            className="min-w-0 flex-1 bg-transparent px-3 text-sm text-stone-900 outline-none"
-          />
-          <button className="rounded-full bg-emerald-800 px-4 py-1.5 text-sm font-medium hover:bg-emerald-900">Ask</button>
-        </form>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {QUESTIONS.map((q) => (
-            <Link key={q} href={`/chat?q=${encodeURIComponent(q)}`} className="rounded-full bg-white/10 px-3 py-1 text-xs hover:bg-white/20">
-              {q}
-            </Link>
-          ))}
-        </div>
-      </section>
+      <BiddyBox placeholder={role === "advisor" ? `Ask Biddy about ${farm.profile.farm_name}…` : "Ask Biddy about your farm’s money…"} questions={suggestionsFor(viewer)} />
 
       <StatusTiles pl={results.pl} cf={results.cf} loans={results.loans} kpi={results.kpi} plc={pro ? results.plc : null} farm={farm} />
 

@@ -14,7 +14,8 @@ import SourcesToggle from "@/components/SourcesToggle";
 import ProLock from "@/components/ProLock";
 import { getViewer } from "@/lib/session";
 import { buildRiskInput, isProjected, runFarm } from "@/lib/financials/farm";
-import { riskSensitivity } from "@/lib/financial-engine/client";
+import { riskSensitivity, riskTornado } from "@/lib/financial-engine/client";
+import TornadoCard from "@/components/financials/TornadoCard";
 import { cashChartData, surplusChartData } from "@/lib/financials/views";
 import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
@@ -45,6 +46,9 @@ export default async function FarmFinancialsPage({ searchParams }) {
   const vs = pro && plc?.status === "ok" ? plc.result : null;
   // Base case only on load; the panel re-runs with the scenarios the farmer ticks.
   const risk = cf.status === "ok" ? await riskSensitivity(buildRiskInput(farm, inputs)) : null;
+  // Advisor tool: which drivers move this client most (same months and loans as the what-if).
+  const rank = params.rank === "operating_surplus" ? "operating_surplus" : "closing_cash";
+  const tornado = role === "advisor" && cf.status === "ok" ? await riskTornado({ ...buildRiskInput(farm, inputs), rank_by: rank }) : null;
   const vsLabel = `vs Jan–${asOf} ${farm.year - 1}`;
   const tag = (m) => ({ label: monthLabel(m.period.month), projected: isProjected(farm, m.period.month) });
 
@@ -151,9 +155,15 @@ export default async function FarmFinancialsPage({ searchParams }) {
 
       {risk && (
         <ProLock pro={pro} title="What if milk drops or feed goes up?" value="Test price and cost shocks on your own cash and surplus before they happen.">
-          <WhatIfCard initial={risk} />
+          <WhatIfCard
+            initial={risk}
+            year={farm.year}
+            priceSource={farm.market?.milk_price != null ? (role === "owner" ? "set by your advisor" : "set in Farm Data") : "market price feed"}
+          />
         </ProLock>
       )}
+
+      {tornado && <TornadoCard response={tornado} rank={rank} />}
 
       {/* Two balanced columns: income + loans on the left, expenses + borrowing capacity on the right. */}
       <div className="grid items-start gap-6 lg:grid-cols-2">
