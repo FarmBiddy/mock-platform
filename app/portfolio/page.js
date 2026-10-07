@@ -12,10 +12,8 @@ import { formatMarginPct } from "@/lib/format/percent";
 import { ADVISOR, getViewer } from "@/lib/session";
 import { readShares } from "@/lib/shared";
 import { readNotes } from "@/lib/notes";
-import BiddyBox from "@/components/BiddyBox";
 import StressEditor from "@/components/StressEditor";
 import { readStressTests } from "@/lib/stress";
-import { suggestionsFor } from "@/lib/biddy-suggestions";
 
 export const metadata = { title: "Portfolio · FarmBiddy" };
 
@@ -62,7 +60,6 @@ export default async function PortfolioPage({ searchParams }) {
         </p>
       </div>
 
-      <BiddyBox placeholder="Ask Biddy about your clients…" questions={suggestionsFor(viewer)} />
 
       {shares.length > 0 && (
         <Card title="Shared by your clients" subtitle="Views a client prepared and sent you, newest first">

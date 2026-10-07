@@ -37,7 +37,7 @@ export default async function RootLayout({ children }) {
                 required
                 maxLength={1000}
                 className="w-full bg-transparent outline-none placeholder:text-stone-400"
-                placeholder={`Ask Biddy — “${suggestionsFor(viewer)[0]}”`}
+                placeholder={suggestionsFor(viewer)[0] ? `Ask Biddy — “${suggestionsFor(viewer)[0]}”` : "Ask Biddy…"}
                 aria-label="Ask Biddy"
               />
             </form>
@@ -46,12 +46,6 @@ export default async function RootLayout({ children }) {
                 Edited data
               </Link>
             )}
-            <button type="button" aria-label="Notifications" className="relative rounded-full p-2 text-stone-600 hover:bg-stone-100">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                <path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-              </svg>
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
-            </button>
             <ViewAs key={`${role}-${farmId}-${tier}`} role={role} tier={tier} owner={getFarm(OWNER_FARM).profile} client={client} />
           </header>
           <main className="flex-1 pb-20 lg:pb-0">{children}</main>
