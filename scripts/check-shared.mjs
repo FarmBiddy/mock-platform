@@ -5,6 +5,7 @@ import { cleanStressEdits, stressTests } from "../lib/financials/whatIf.js";
 
 assert.equal(safeHref("/plan?s=base&price=0.42&inv=parlour"), "/plan?s=base&price=0.42&inv=parlour");
 assert.equal(safeHref("/farm-financials"), "/farm-financials");
+assert.equal(safeHref("/decisions?go=1&inv=parlour&amount=120000&l0=Labour&a0=15000"), "/decisions?go=1&inv=parlour&amount=120000&l0=Labour&a0=15000");
 for (const bad of ["//evil.com", "https://evil.com", "/plan/../x", "/settings", "/plan?x=<script>", "javascript:alert(1)", "/plan#x", 42, null]) {
   assert.equal(safeHref(bad), null, String(bad));
 }
