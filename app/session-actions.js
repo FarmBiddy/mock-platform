@@ -40,3 +40,10 @@ export async function saveNote(formData) {
   const notes = { ...(await readNotes()), [farmId]: String(formData.get("note") ?? "").trim().slice(0, NOTE_MAX) };
   (await cookies()).set(NOTES_COOKIE, JSON.stringify(notes), OPTS);
 }
+
+/** Start the demo again: drop every demo cookie (role, plan, client, edits, shares, notes, stress tests). */
+export async function resetDemo() {
+  const jar = await cookies();
+  for (const { name } of jar.getAll()) if (name.startsWith("fb_")) jar.delete(name);
+  redirect("/dashboard");
+}

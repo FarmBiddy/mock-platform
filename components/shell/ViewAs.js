@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { openClient, setTier, viewAs } from "@/app/session-actions";
+import { openClient, resetDemo, setTier, viewAs } from "@/app/session-actions";
+import ResetDemoButton from "./ResetDemoButton";
 import { ADVISOR } from "@/lib/session";
 
 /**
@@ -63,6 +64,9 @@ export default function ViewAs({ role, owner, client, tier }) {
               Client portfolio →
             </Link>
           )}
+          <form action={resetDemo} className="mt-1 border-t border-stone-100 pt-1">
+            <ResetDemoButton />
+          </form>
         </div>
       </details>
     </>
