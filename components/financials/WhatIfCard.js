@@ -17,7 +17,7 @@ const fromLabel = (from) => (from ? monthLabel(from.month) : null);
  * Break-even sentences for the base case, straight from the engine (null = not computable).
  * With shocks_from, break-evens only look at the months from that point (ADR-0040).
  */
-function BreakEvens({ result }) {
+function BreakEvens({ result, priceSource }) {
   const base = result.scenarios[0];
   const { surplus_milk_price_c: lossBelow, cash_milk_price_c: overdrawnBelow } = base.break_even;
   const price = result.milk_price_c;
@@ -27,7 +27,8 @@ function BreakEvens({ result }) {
   return (
     <ul className="space-y-1 text-sm">
       <li>
-        Milk is {from ? "forecast" : "averaging"} at <strong>{cents(price)}</strong> {span}.
+        Milk is {from ? "forecast" : "averaging"} at <strong>{cents(price)}</strong> {span}
+        {priceSource && <span className="text-stone-500"> ({priceSource})</span>}.
       </li>
       {lossBelow != null &&
         (lossBelow > 0 ? (
@@ -78,7 +79,8 @@ function StressLines({ result }) {
  * What-if panel on risk.sensitivity. The farmer ticks presets; the server runs them against the same
  * months as the page. Every figure is the engine's.
  */
-export default function WhatIfCard({ initial }) {
+/** `priceSource`: where the forecast milk price comes from; `year`: the calendar year the columns cover. */
+export default function WhatIfCard({ initial, priceSource, year }) {
   const [picked, setPicked] = useState([]);
   const [response, setResponse] = useState(initial);
   const [pending, startTransition] = useTransition();
@@ -107,7 +109,7 @@ export default function WhatIfCard({ initial }) {
         <p className="text-sm text-stone-500">Couldn’t run the scenarios: {response.error?.message ?? "missing figures"}.</p>
       ) : (
         <>
-          <BreakEvens result={response.result} />
+          <BreakEvens result={response.result} priceSource={priceSource} />
 
           <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Scenarios">
             {WHAT_IF_PRESETS.map((p) => (
@@ -144,11 +146,11 @@ export default function WhatIfCard({ initial }) {
               <thead className="text-left text-xs text-stone-500">
                 <tr>
                   <th className="py-1 font-medium">Scenario</th>
-                  <th className="py-1 text-right font-medium">Surplus (full year)</th>
+                  <th className="py-1 text-right font-medium">Surplus {year}</th>
                   <th className="py-1 text-right font-medium">Cash 31 Dec</th>
                   <th className="py-1 text-right font-medium">Lowest cash{from ? ` (from ${from})` : ""}</th>
                   <th className="py-1 text-right font-medium">Months overdrawn{from ? ` (from ${from})` : ""}</th>
-                  <th className="py-1 text-right font-medium">Debt cover</th>
+                  <th className="py-1 text-right font-medium">Debt cover {year}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">

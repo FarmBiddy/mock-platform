@@ -7,7 +7,7 @@ import { loadFarm, readEdits } from "@/lib/farm-edits";
 import PresetEditor, { presetSummary } from "@/components/plan/PresetEditor";
 import ProLock from "@/components/ProLock";
 import { ADVISOR, getViewer } from "@/lib/session";
-import { buildPlanInput, runFarm } from "@/lib/financials/farm";
+import { buildPlanInput, forecastMilkPrice, runFarm } from "@/lib/financials/farm";
 import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
 
@@ -168,9 +168,16 @@ export default async function PlanPage({ searchParams }) {
                   label="Weakest loan cover"
                   value={lowDscr.debt.dscr == null ? "—" : `${fmt(lowDscr.debt.dscr, 2)}×`}
                   danger={lowDscr.flags.below_min_cover}
-                  hint={`Year ${lowDscr.year}${farm.new_loan_terms?.min_cover ? ` · lender minimum ${fmt(farm.new_loan_terms.min_cover, 2)}×` : ""}`}
+                  hint={`Year ${lowDscr.year} (${ym(lowDscr.period.from)}–${ym(lowDscr.period.to)})${farm.new_loan_terms?.min_cover ? ` · lender minimum ${fmt(farm.new_loan_terms.min_cover, 2)}×` : ""}`}
                 />
               </div>
+
+              <p className="text-xs text-stone-500">
+                Year 1 milk price {fmt(plan.years[0].kpis.milk_price_c)}c/L comes from{" "}
+                {price != null ? "the figure entered above" : `the ${preset.label} preset${role === "owner" ? ` set by ${ADVISOR.name}` : ""}`}. This year’s forecast on Farm
+                Financials uses {fmt(forecastMilkPrice(farm, farm.actual_through_month + 1) * 100)}c/L ({farm.market?.milk_price != null ? "set in Farm Data" : "market price feed"}).
+                Loan cover here is per plan year ({monthLabel(plan.years[0].period.from.month)}–{monthLabel(plan.years[0].period.to.month)}), not the calendar year.
+              </p>
 
               {role === "owner" && (
                 <Link href={`/share?${share}`} className="flex items-center justify-between gap-3 rounded-2xl bg-sky-50 px-5 py-3 text-sm text-sky-900 ring-1 ring-sky-200 hover:bg-sky-100">

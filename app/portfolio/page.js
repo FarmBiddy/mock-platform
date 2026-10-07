@@ -102,7 +102,7 @@ export default async function PortfolioPage() {
                 <th className="py-2 pr-4 font-medium">Client</th>
                 <th className="py-2 pr-4 text-right font-medium">Cost of production</th>
                 <th className="py-2 pr-4 text-right font-medium">Surplus to date</th>
-                <th className="py-2 pr-4 text-right font-medium">Loan cover</th>
+                <th className="py-2 pr-4 text-right font-medium">Loan cover <span className="block font-normal">Jan–{monthLabel(rows[0]?.farm.actual_through_month ?? 12)}</span></th>
                 <th className="py-2 pr-4 text-right font-medium">Lowest cash ahead</th>
                 <th className="py-2 font-medium">Needs a look</th>
               </tr>
