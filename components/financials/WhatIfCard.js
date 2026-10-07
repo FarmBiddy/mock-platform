@@ -5,7 +5,8 @@ import { runWhatIf } from "@/app/farm-financials/actions";
 import { Badge, Card } from "@/components/ui";
 import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
-import { STRESS_TESTS, WHAT_IF_PRESETS } from "@/lib/financials/whatIf";
+import Link from "next/link";
+import { ALL_SCENARIOS, STRESS_TESTS, WHAT_IF_PRESETS, planHref } from "@/lib/financials/whatIf";
 
 const cents = (v) => `${v.toLocaleString("en-IE", { maximumFractionDigits: 1 })}c/L`;
 const times = (v) => (v == null ? "—" : `${v.toLocaleString("en-IE", { maximumFractionDigits: 1 })}×`);
@@ -151,6 +152,9 @@ export default function WhatIfCard({ initial, priceSource, year }) {
                   <th className="py-1 text-right font-medium">Lowest cash{from ? ` (from ${from})` : ""}</th>
                   <th className="py-1 text-right font-medium">Months overdrawn{from ? ` (from ${from})` : ""}</th>
                   <th className="py-1 text-right font-medium">Debt cover {year}</th>
+                  <th className="py-1 font-medium">
+                    <span className="sr-only">Five-year plan</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
@@ -164,6 +168,16 @@ export default function WhatIfCard({ initial, priceSource, year }) {
                     </td>
                     <td className="py-1.5 text-right">{s.overdraft_months}</td>
                     <td className={`py-1.5 text-right ${s.dscr != null && s.dscr < 1 ? "text-red-700" : ""}`}>{times(s.dscr)}</td>
+                    <td className="py-1.5 pl-3 text-right">
+                      {ALL_SCENARIOS.some((p) => p.label === s.name) && (
+                        <Link
+                          href={planHref(ALL_SCENARIOS.find((p) => p.label === s.name).shock, response.result.milk_price_c)}
+                          className="whitespace-nowrap text-xs font-medium text-emerald-800 hover:underline"
+                        >
+                          If it lasts: 5 years →
+                        </Link>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

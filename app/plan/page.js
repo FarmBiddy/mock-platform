@@ -41,6 +41,9 @@ export default async function PlanPage({ searchParams }) {
   const price = param(sp.price, 0.2, 1);
   const inflation = param(sp.infl, -5, 15);
   const rates = param(sp.rates, -3, 10); // pp vs today, variable loans only (ADR-0043)
+  // Carried over from a What-if scenario ("If it lasts"): year-1 changes that then stay.
+  const carried = { feed: param(sp.feed, -50, 200), fertiliser: param(sp.fert, -50, 200), herd: param(sp.herd, -50, 50) };
+  const lineShocks = Object.fromEntries(["feed", "fertiliser"].filter((l) => carried[l] != null).map((l) => [l, [carried[l]]]));
   const invIds = [].concat(sp.inv ?? []);
   const investments = (farm.plan_investments ?? []).filter((i) => invIds.includes(i.id));
 
@@ -49,6 +52,8 @@ export default async function PlanPage({ searchParams }) {
     ...(price == null ? {} : { milk_price: [price] }),
     ...(inflation == null ? {} : { cost_inflation_pct: Array(YEARS).fill(inflation) }),
     ...(rates == null ? {} : { interest_rate_shift_pp: [rates] }),
+    ...(Object.keys(lineShocks).length ? { lines_inflation_pct: { ...preset.assumptions.lines_inflation_pct, ...lineShocks } } : {}),
+    ...(carried.herd == null ? {} : { herd_pct: [carried.herd] }),
   };
 
   const { inputs, cf } = await runFarm(farm);
@@ -68,7 +73,8 @@ export default async function PlanPage({ searchParams }) {
   const lowDscr = lowest((y) => y.debt.dscr);
   const lowCash = lowest((y) => y.cash.closing);
   // Same view for the advisor: the plan URL with this scenario, and engine figures as a one-line summary.
-  const query = new URLSearchParams([["s", presetKey], ...(price == null ? [] : [["price", price]]), ...(inflation == null ? [] : [["infl", inflation]]), ...(rates == null ? [] : [["rates", rates]]), ...investments.map((i) => ["inv", i.id])]);
+  const carriedParams = [["feed", carried.feed], ["fert", carried.fertiliser], ["herd", carried.herd]].filter(([, v]) => v != null);
+  const query = new URLSearchParams([["s", presetKey], ...(price == null ? [] : [["price", price]]), ...(inflation == null ? [] : [["infl", inflation]]), ...(rates == null ? [] : [["rates", rates]]), ...carriedParams, ...investments.map((i) => ["inv", i.id])]);
   const share =
     plan &&
     new URLSearchParams({
@@ -89,7 +95,24 @@ export default async function PlanPage({ searchParams }) {
 
       <ProLock pro={pro} title="Plan the next five years" value="See where cash, debt cover and net worth go under cautious, base or optimistic prices — and what a new parlour would do.">
         <div className="space-y-6">
+          {carriedParams.length > 0 && (
+            <p className="flex flex-wrap items-center gap-2 rounded-xl bg-sky-50 px-4 py-2 text-sm text-sky-900 ring-1 ring-sky-200">
+              From the What-if, lasting from year 1:{" "}
+              {carriedParams.map(([k, v]) => (
+                <span key={k} className="rounded-full bg-white px-2 py-0.5 text-xs ring-1 ring-sky-200">
+                  {{ feed: "Feed", fert: "Fertiliser", herd: "Herd" }[k]} {v > 0 ? "+" : ""}
+                  {v}%
+                </span>
+              ))}
+              <Link href={`/plan?${new URLSearchParams(query.entries().filter(([k]) => !["feed", "fert", "herd"].includes(k)))}`} className="text-xs underline">
+                Remove
+              </Link>
+            </p>
+          )}
           <form className="grid gap-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200/70 lg:grid-cols-[2fr_1fr_1fr]">
+            {carriedParams.map(([k, v]) => (
+              <input key={k} type="hidden" name={k} value={v} />
+            ))}
             <fieldset>
               <legend className="text-sm font-medium">
                 Scenario
