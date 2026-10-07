@@ -155,7 +155,7 @@ export default function WhatIfCard({ initial }) {
                 {response.result.scenarios.map((s) => (
                   <tr key={s.name} className={s.name === "base" ? "font-medium" : ""}>
                     <td className="py-1.5">{s.name === "base" ? "As forecast" : s.name}</td>
-                    <td className={`py-1.5 text-right ${s.surplus < 0 ? "text-red-700" : ""}`}>{formatCurrency(s.surplus, response.result.currency)}</td>
+                    <td className={`py-1.5 text-right ${s.operating_surplus < 0 ? "text-red-700" : ""}`}>{formatCurrency(s.operating_surplus, response.result.currency)}</td>
                     <td className={`py-1.5 text-right ${s.closing_cash < 0 ? "text-red-700" : ""}`}>{formatCurrency(s.closing_cash, response.result.currency)}</td>
                     <td className={`py-1.5 text-right ${s.lowest_cash.amount < 0 ? "text-red-700" : ""}`}>
                       {formatCurrency(s.lowest_cash.amount, response.result.currency)} <span className="text-xs text-stone-500">{monthLabel(s.lowest_cash.period.month)}</span>

@@ -3,7 +3,7 @@ import { Badge, Card } from "@/components/ui";
 import { labelForInput } from "@/lib/financial-engine/mapResult";
 import { formatCurrency } from "@/lib/format/currency";
 
-const RANKS = { closing_cash: "Cash on 31 Dec", surplus: "Surplus (full year)" };
+const RANKS = { closing_cash: "Cash on 31 Dec", operating_surplus: "Surplus (full year)" };
 const SHOWN = 8;
 
 /** "Milk price ±4.8c/L", "Feed ±10%", "Variable rates ±1 pp" from the engine's driver row. */

@@ -119,7 +119,7 @@ export default async function ReportsPage({ searchParams }) {
       )}
 
       <p className="text-xs text-stone-400">
-        Figures calculated by the FarmBiddy Financial Engine from the farm’s records. Projections are estimates.
+        Figures calculated by the FarmBiddy Financial Engine{response.meta?.engine_version ? ` ${response.meta.engine_version}` : ""} from the farm’s records. Projections are estimates.
       </p>
     </div>
   );

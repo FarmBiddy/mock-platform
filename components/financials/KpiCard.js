@@ -22,8 +22,8 @@ export default function KpiCard({ response, params, describePath }) {
             <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
               <Stat label="Cost of production" value={cents(r.per_litre_c.costs)} hint={`${cents(r.per_litre_c.variable_costs)} variable`} />
               <Stat label="Income per litre" value={cents(r.per_litre_c.revenue)} hint="Milk, schemes and other" />
-              <Stat label="Surplus per litre" value={cents(r.per_litre_c.surplus)} danger={r.per_litre_c.surplus < 0} />
-              <Stat label="Surplus per cow" value={formatCurrency(r.per_cow.surplus, r.currency)} danger={r.per_cow.surplus < 0} hint={`${r.milking_cows} cows`} />
+              <Stat label="Surplus per litre" value={cents(r.per_litre_c.operating_surplus)} danger={r.per_litre_c.operating_surplus < 0} />
+              <Stat label="Surplus per cow" value={formatCurrency(r.per_cow.operating_surplus, r.currency)} danger={r.per_cow.operating_surplus < 0} hint={`${r.milking_cows} cows`} />
               <Stat label="Milk per cow" value={litres(r.per_cow.milk_litres)} />
               <Stat label="Debt per cow" value={r.debt ? formatCurrency(r.debt.per_cow, r.currency) : "—"} hint={r.debt ? `${formatCurrency(r.debt.balance, r.currency)} total` : null} />
             </div>

@@ -26,7 +26,8 @@ cp .env.local.example .env.local
 Edit `.env.local` if your engine URL differs:
 
 ```
-NEXT_PUBLIC_FINANCIAL_ENGINE_URL=http://127.0.0.1:8000
+FINANCIAL_ENGINE_URL=http://127.0.0.1:8000
+# ENGINE_API_KEY=   # only when the engine requires a service token
 ```
 
 ## Run

@@ -47,7 +47,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
   // Base case only on load; the panel re-runs with the scenarios the farmer ticks.
   const risk = cf.status === "ok" ? await riskSensitivity(buildRiskInput(farm, inputs)) : null;
   // Advisor tool: which drivers move this client most (same months and loans as the what-if).
-  const rank = params.rank === "surplus" ? "surplus" : "closing_cash";
+  const rank = params.rank === "operating_surplus" ? "operating_surplus" : "closing_cash";
   const tornado = role === "advisor" && cf.status === "ok" ? await riskTornado({ ...buildRiskInput(farm, inputs), rank_by: rank }) : null;
   const vsLabel = `vs Jan–${asOf} ${farm.year - 1}`;
   const tag = (m) => ({ label: monthLabel(m.period.month), projected: isProjected(farm, m.period.month) });
