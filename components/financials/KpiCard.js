@@ -1,6 +1,5 @@
 import { Badge, Card } from "@/components/ui";
 import EngineGate from "@/components/financials/EngineGate";
-import { Stat } from "@/components/financials/PlatformCards";
 import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
 import { MILK_METRICS, compareToAverage } from "@/lib/benchmarks-core";
@@ -58,6 +57,72 @@ function MilkQuality({ benchmarks, statement = null }) {
   );
 }
 
+/** A bar for one per-litre figure, its length relative to the larger of earn / cost (bar geometry only). */
+function LitreBar({ label, value, scale, color }) {
+  return (
+    <div>
+      <div className="flex justify-between text-sm">
+        <span className="text-stone-600">{label}</span>
+        <span className="font-semibold tabular-nums">{cents(value)}</span>
+      </div>
+      <div className="mt-1 h-3 rounded-full bg-stone-100">
+        <div className="h-3 rounded-full" style={{ width: `${scale ? (Math.max(value ?? 0, 0) / scale) * 100 : 0}%`, background: color }} />
+      </div>
+    </div>
+  );
+}
+
+function CowTile({ label, value, hint }) {
+  return (
+    <div className="rounded-xl bg-white p-3 ring-1 ring-stone-200">
+      <p className="text-sm font-medium text-stone-700">{label}</p>
+      <p className="mt-1 text-2xl font-semibold tabular-nums text-stone-900">{value}</p>
+      {hint && <p className="mt-0.5 text-xs text-stone-500">{hint}</p>}
+    </div>
+  );
+}
+
+/** kpi.summary in two easy reads: a litre of milk (earn vs cost, what's left) and per cow. */
+function KeyFigures({ r }) {
+  const earn = r.per_litre_c.revenue;
+  const cost = r.per_litre_c.costs;
+  const left = r.per_litre_c.operating_surplus;
+  const scale = Math.max(earn ?? 0, cost ?? 0);
+  return (
+    <div className="grid gap-5 lg:grid-cols-[2fr_3fr]">
+      <div>
+        <p className="text-sm font-semibold text-stone-800">A litre of milk</p>
+        <div className="mt-3 space-y-3">
+          <LitreBar label="You earn" value={earn} scale={scale} color="#22a06b" />
+          <LitreBar label="It costs you" value={cost} scale={scale} color="#f28b82" />
+        </div>
+        <p className="mt-3 rounded-lg bg-stone-50 px-3 py-2 text-sm text-stone-700">
+          {left == null ? (
+            "—"
+          ) : left >= 0 ? (
+            <>
+              <strong>{cents(left)}</strong> left over on every litre
+            </>
+          ) : (
+            <>
+              Each litre costs <strong>{cents(-left)}</strong> more than it earns
+            </>
+          )}
+        </p>
+        <p className="mt-1 text-[11px] text-stone-400">Earnings include milk, schemes and other farm income.</p>
+      </div>
+      <div>
+        <p className="text-sm font-semibold text-stone-800">Per cow · {r.milking_cows} cows</p>
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <CowTile label="Left over" value={formatCurrency(r.per_cow.operating_surplus, r.currency)} hint="after farm costs" />
+          <CowTile label="Milk" value={litres(r.per_cow.milk_litres)} hint="so far this year" />
+          <CowTile label="Loans" value={r.debt ? formatCurrency(r.debt.per_cow, r.currency) : "—"} hint={r.debt ? `${formatCurrency(r.debt.balance, r.currency)} in total` : null} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Dairy key figures from kpi.summary (actual months only), in plain words. Dairy-specific: shown for enterprise "dairy". */
 export default function KpiCard({ response, params, describePath, milkBenchmarks, milkStatement }) {
   return (
@@ -68,14 +133,7 @@ export default function KpiCard({ response, params, describePath, milkBenchmarks
     >
       <EngineGate response={response} params={params} describePath={describePath}>
         {(r) => (
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
-            <Stat label="It costs you, per litre" value={cents(r.per_litre_c.costs)} hint="to produce a litre of milk" />
-            <Stat label="You earn, per litre" value={cents(r.per_litre_c.revenue)} hint="milk, schemes and other income" />
-            <Stat label="Left over, per litre" value={cents(r.per_litre_c.operating_surplus)} hint="earned minus cost" />
-            <Stat label="Left over, per cow" value={formatCurrency(r.per_cow.operating_surplus, r.currency)} hint={`${r.milking_cows} cows`} />
-            <Stat label="Milk per cow" value={litres(r.per_cow.milk_litres)} hint="so far this year" />
-            <Stat label="Loans, per cow" value={r.debt ? formatCurrency(r.debt.per_cow, r.currency) : "—"} hint={r.debt ? `${formatCurrency(r.debt.balance, r.currency)} in total` : null} />
-          </div>
+          <KeyFigures r={r} />
         )}
       </EngineGate>
       <MilkQuality benchmarks={milkBenchmarks} statement={milkStatement} />
