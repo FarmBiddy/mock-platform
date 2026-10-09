@@ -104,7 +104,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
       {/* Loans and what more could be borrowed, side by side. */}
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <LoansCard response={loans} loans={farm.loans} params={params} describePath={describePath} />
-        <ProLock pro={pro} title="How much more could you borrow?" value="The loan your surplus can carry at the bank’s cover, worked out before you ask.">
+        <ProLock pro={pro} title="Could the farm take on a new loan?" value="See how much the farm could borrow and what it would cost a month, before you talk to a bank.">
           <BorrowCard response={cap} params={params} describePath={describePath} />
         </ProLock>
       </div>

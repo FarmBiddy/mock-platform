@@ -4,51 +4,92 @@ import { formatCurrency } from "@/lib/format/currency";
 import { formatMarginPct } from "@/lib/format/percent";
 import { dayLabel, monthLabel } from "@/lib/format/date";
 
+/** "Paid off by Jun 2029" from the last month of the engine's schedule. */
+const paidOffBy = (l) => {
+  const end = l.months.at(-1)?.period;
+  return end ? `${monthLabel(end.month)} ${end.year}` : "—";
+};
+
 /**
- * Loans from loan.schedule. Engine results are in the same order as the platform's
- * `loans` (which holds names, lenders, rate type).
+ * "Your loans" from loan.schedule, in plain words: how much is owed, when each loan is paid off,
+ * what fixed / variable means, and how each payment splits between paying down the loan and the
+ * bank's charge (interest). Engine results are in the same order as the platform's `loans`
+ * (which holds names, lenders, rate type).
  * @param {{ response: import("@/lib/financial-engine/client").EngineResponse<import("@/lib/financial-engine/client").LoanScheduleResult>, loans: object[], params?: object }} props
  */
 export function LoansCard({ response, loans, params, describePath }) {
   return (
-    <Card title="Loans & Repayments" subtitle="Not an operating cost — shown here and in cash flow" badge={<Badge>loan.schedule</Badge>}>
+    <Card title="Your loans" subtitle="What you owe, when it’s paid off, and where each payment goes" badge={<Badge>loan.schedule</Badge>}>
       <EngineGate response={response} params={params} describePath={describePath}>
         {(r) => (
           <>
-            <div className="mb-4 flex gap-6 text-sm">
-              <Stat label="Outstanding" value={formatCurrency(r.total_balance, r.currency)} />
-              <Stat label="Monthly repayments" value={formatCurrency(r.total_monthly_payment, r.currency)} />
-            </div>
-            <ul className="space-y-3">
+            <p className="text-sm text-stone-700">
+              You owe <strong>{formatCurrency(r.total_balance, r.currency)}</strong> across {r.loans.length} loan{r.loans.length === 1 ? "" : "s"} and pay{" "}
+              <strong>{formatCurrency(r.total_monthly_payment, r.currency)} a month</strong> in total.
+            </p>
+            <ul className="mt-4 space-y-3">
               {r.loans.map((l, i) => {
                 const meta = loans[i];
                 const next = l.months[0];
-                const end = l.months.at(-1).period;
+                const variable = meta.rate_type === "Variable";
                 return (
-                  <li key={meta.id} className="rounded-xl bg-stone-50 p-3 text-sm">
-                    <div className="flex justify-between gap-3">
+                  <li key={meta.id} className="rounded-xl bg-stone-50 p-3 text-sm ring-1 ring-stone-200/60">
+                    <div className="flex flex-wrap justify-between gap-x-3">
                       <span className="font-medium">{meta.name}</span>
-                      <span className="tabular-nums font-medium">{formatCurrency(l.balance, r.currency)}</span>
+                      <span className="text-xs text-stone-500">{meta.lender}</span>
                     </div>
-                    <p className="mt-1 text-xs text-stone-500">
-                      {meta.lender} · {meta.rate_type} {formatRate(l.annual_rate)} · ends {monthLabel(end.month)} {end.year}
+                    {l.repaid_pct != null ? (
+                      <div className="mt-2">
+                        <div className="h-2 rounded-full bg-stone-200">
+                          <div className="h-2 rounded-full bg-emerald-600" style={{ width: `${l.repaid_pct}%` }} />
+                        </div>
+                        <p className="mt-1 text-xs text-stone-600">
+                          <strong>{formatMarginPct(l.repaid_pct, 0)} paid off</strong> · {formatCurrency(l.balance, r.currency)} still to pay
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="mt-1 text-xs text-stone-600">
+                        <strong>{formatCurrency(l.balance, r.currency)}</strong> still to pay
+                      </p>
+                    )}
+                    <p className="mt-2 text-xs text-stone-600">
+                      📅 <strong>Paid off by {paidOffBy(l)}</strong>, then about {formatCurrency(l.monthly_payment, r.currency)} a month is free again.
                     </p>
                     <p className="mt-1 text-xs text-stone-600">
-                      Next {monthLabel(next.period.month)}: {formatCurrency(next.payment, r.currency)} (
-                      {formatCurrency(next.principal, r.currency)} principal + {formatCurrency(next.interest, r.currency)} interest)
+                      {variable ? "〰" : "🔒"} <strong>{variable ? "Variable" : "Fixed"} rate, {formatRate(l.annual_rate)} a year:</strong>{" "}
+                      {variable ? "your payment can go up or down if bank rates change." : "your payment stays the same until the end."}
                     </p>
-                    {l.repaid_pct != null && (
-                      <div className="mt-2 flex items-center gap-2 text-xs text-stone-500">
-                        <div className="h-1.5 flex-1 rounded-full bg-stone-200">
-                          <div className="h-1.5 rounded-full bg-emerald-700" style={{ width: `${l.repaid_pct}%` }} />
+                    {next && (
+                      <div className="mt-2">
+                        <p className="text-xs text-stone-600">
+                          <strong>
+                            {monthLabel(next.period.month)} payment: {formatCurrency(next.payment, r.currency)}
+                          </strong>
+                        </p>
+                        {/* bar split: share of the payment that pays down the loan vs the bank's charge */}
+                        <div className="mt-1 flex h-2 overflow-hidden rounded-full bg-stone-200">
+                          <div className="bg-emerald-600" style={{ width: `${(next.principal / next.payment) * 100}%` }} />
+                          <div className="bg-amber-400" style={{ width: `${(next.interest / next.payment) * 100}%` }} />
                         </div>
-                        {formatMarginPct(l.repaid_pct, 0)} repaid
+                        <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-stone-600">
+                          <span>
+                            <span aria-hidden className="mr-1 inline-block h-2 w-2 rounded-sm bg-emerald-600" />
+                            {formatCurrency(next.principal, r.currency)} pays down the loan
+                          </span>
+                          <span>
+                            <span aria-hidden className="mr-1 inline-block h-2 w-2 rounded-sm bg-amber-400" />
+                            {formatCurrency(next.interest, r.currency)} is the bank’s charge (interest)
+                          </span>
+                        </p>
                       </div>
                     )}
                   </li>
                 );
               })}
             </ul>
+            <p className="mt-3 text-xs text-stone-500">
+              Bank charges (interest) still to pay on these loans: <strong>{formatCurrency(r.total_interest, r.currency)}</strong>
+            </p>
           </>
         )}
       </EngineGate>
