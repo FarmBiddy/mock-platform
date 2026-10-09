@@ -70,7 +70,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
         </p>
       )}
 
-      <MoneyTiles cfc={cfc} cf={cf} farm={farm} />
+      <MoneyTiles cfc={cfc} farm={farm} />
 
       <CheckFiguresNudge cfc={cfc} cf={cf} owner={role === "owner"} />
 
