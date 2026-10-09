@@ -13,8 +13,8 @@ import SourcesToggle from "@/components/SourcesToggle";
 import ProLock from "@/components/ProLock";
 import { getViewer } from "@/lib/session";
 import { readStressTests } from "@/lib/stress";
-import { buildCfCompareInput, buildRiskInput, runFarm } from "@/lib/financials/farm";
-import { cfCompare, riskSensitivity, riskTornado } from "@/lib/financial-engine/client";
+import { buildCfCompareInput, buildHistoricDebtCapacityInputs, buildRiskInput, runFarm } from "@/lib/financials/farm";
+import { cfCompare, debtCapacity, riskSensitivity, riskTornado } from "@/lib/financial-engine/client";
 import TornadoCard from "@/components/financials/TornadoCard";
 import { cashflowChartData } from "@/lib/financials/views";
 import { getMilkBenchmarks } from "@/lib/benchmarks";
@@ -47,6 +47,12 @@ export default async function FarmFinancialsPage({ searchParams }) {
     return item?.month ? `${monthLabel(item.month)}${item.year !== farm.year ? ` ${item.year}` : ""}` : null;
   };
   const forecastIssue = [plf, cff].find((r) => r && r.status !== "ok");
+  // New loan: sized on what actually happened (last 12 months and last year), never the forecast; the
+  // lower of the two is the answer, the other is shown for context. Without a year of records: the year incl. forecast.
+  const historic = await Promise.all(buildHistoricDebtCapacityInputs(farm).map(async ({ key, input }) => ({ key, response: await debtCapacity(input) })));
+  const sized = historic.filter((h) => h.response.status === "ok");
+  const prudent = sized.reduce((a, b) => (!a || b.response.result.new_loan.max_principal < a.response.result.new_loan.max_principal ? b : a), null);
+  const otherPeriod = sized.find((h) => h !== prudent)?.response.result ?? null;
   // Latest co-op milk statement (platform record, shown as recorded) for the Milk quality tiles.
   const lastQuality = farm.months.find((m) => m.month === farm.actual_through_month)?.quality;
   const milkStatement = lastQuality
@@ -111,7 +117,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <LoansCard response={loans} loans={farm.loans} params={params} describePath={describePath} />
         <ProLock pro={pro} title="Could the farm take on a new loan?" value="See how much the farm could borrow and what it would cost a month, before you talk to a bank.">
-          <BorrowCard response={cap} params={params} describePath={describePath} />
+          <BorrowCard response={prudent?.response ?? cap} actualOnly={Boolean(prudent)} other={otherPeriod} params={params} describePath={describePath} />
         </ProLock>
       </div>
     </div>
