@@ -118,7 +118,7 @@ function KeyFigures({ r }) {
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <CowTile verb="Each cow gave" value={litres(r.per_cow.milk_litres)} rest="of milk" />
           <CowTile verb="Each cow made" value={formatCurrency(r.per_cow.operating_surplus, r.currency)} rest="after farm costs" />
-          {r.debt && <CowTile verb="Loans work out at" value={formatCurrency(r.debt.per_cow, r.currency)} rest={`a cow (${formatCurrency(r.debt.balance, r.currency)} in total)`} />}
+          {r.debt && <CowTile verb="You owe" value={formatCurrency(r.debt.per_cow, r.currency)} rest={`in loans for each cow (${formatCurrency(r.debt.balance, r.currency)} in total)`} />}
         </div>
       </div>
     </div>
