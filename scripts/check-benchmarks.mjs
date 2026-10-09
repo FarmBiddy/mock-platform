@@ -1,6 +1,6 @@
-// Self-check for milk-quality benchmarks (CSO parser, above / below / about the average): part of `npm run check`.
+// Self-check for milk-quality benchmarks (CSO and ICBF readers, province lookup): part of `npm run check`.
 import assert from "node:assert/strict";
-import { compareToAverage, parseCsoSolids, parseIcbfRunDate, parseIcbfScc, provinceOf } from "../lib/benchmarks-core.js";
+import { parseCsoSolids, parseIcbfRunDate, parseIcbfScc, provinceOf } from "../lib/benchmarks-core.js";
 
 // JSON-stat 2.0 shaped like CSO AKM01, with the statistics deliberately out of order and the last month unpublished
 const cso = {
@@ -21,12 +21,6 @@ const cso = {
 assert.deepEqual(parseCsoSolids(cso), { month: "202607", label: "2026 July", fat_pct: 4.18, protein_pct: 3.48 }, "latest published domestic month, by code");
 assert.equal(parseCsoSolids({ broken: true }), null);
 
-// above / below / about, and whether that is good (lower is better for cells and bacteria)
-assert.deepEqual(compareToAverage("fat_pct", 4.3, 4.18), { position: "above", good: true });
-assert.deepEqual(compareToAverage("fat_pct", 4.21, 4.18), { position: "about", good: null }, "within 0.05 pp");
-assert.deepEqual(compareToAverage("scc_k", 150, 179), { position: "below", good: true });
-assert.deepEqual(compareToAverage("scc_k", 230, 179), { position: "above", good: false });
-assert.equal(compareToAverage("tbc_k", 9, null), null, "no average published");
 
 // ICBF weekly SCC table: columns found by header (here reordered), regions with all figures, period from the title
 const icbf = `<table><tr><td><h4>% herd Breakdown for the 10 day period, &#039;29-SEP-2026&#039; to &#039;09-OCT-2026&#039;</h4></td></tr>

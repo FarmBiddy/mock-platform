@@ -13,11 +13,11 @@ import SourcesToggle from "@/components/SourcesToggle";
 import ProLock from "@/components/ProLock";
 import { getViewer } from "@/lib/session";
 import { readStressTests } from "@/lib/stress";
-import { buildCfCompareInput, buildHistoricDebtCapacityInputs, buildRiskInput, runFarm } from "@/lib/financials/farm";
-import { cfCompare, debtCapacity, riskSensitivity, riskTornado } from "@/lib/financial-engine/client";
+import { buildCfCompareInput, buildHistoricDebtCapacityInputs, buildMilkQualityInput, buildRiskInput, runFarm } from "@/lib/financials/farm";
+import { cfCompare, debtCapacity, milkQuality, riskSensitivity, riskTornado } from "@/lib/financial-engine/client";
 import TornadoCard from "@/components/financials/TornadoCard";
 import { cashflowChartData } from "@/lib/financials/views";
-import { getMilkBenchmarks } from "@/lib/benchmarks";
+import { getMilkBenchmarks, toEngineBenchmarks } from "@/lib/benchmarks";
 import { monthLabel } from "@/lib/format/date";
 
 export const metadata = { title: "Farm Financials · FarmBiddy" };
@@ -53,11 +53,16 @@ export default async function FarmFinancialsPage({ searchParams }) {
   const sized = historic.filter((h) => h.response.status === "ok");
   const prudent = sized.reduce((a, b) => (!a || b.response.result.new_loan.max_principal < a.response.result.new_loan.max_principal ? b : a), null);
   const otherPeriod = sized.find((h) => h !== prudent)?.response.result ?? null;
-  // Latest co-op milk statement (platform record, shown as recorded) for the Milk quality tiles.
-  const lastQuality = farm.months.find((m) => m.month === farm.actual_through_month)?.quality;
-  const milkStatement = lastQuality
-    ? { label: new Date(Date.UTC(farm.year, farm.actual_through_month - 1)).toLocaleString("en-IE", { month: "long", timeZone: "UTC" }), values: lastQuality }
-    : null;
+  // Milk quality (milk.quality): the latest statement month against the latest averages (same season, so a fair
+  // comparison, done by the engine), and the last 12 months for the year figures and the EU limits.
+  const milkBenchmarks = await getMilkBenchmarks(farm);
+  const hasStatements = farm.months.some((m) => m.quality);
+  const [milkLatest, milkYear] = hasStatements
+    ? await Promise.all([
+        milkQuality(buildMilkQualityInput(farm, { count: 1, benchmarks: toEngineBenchmarks(milkBenchmarks) })),
+        milkQuality(buildMilkQualityInput(farm, { count: 12 })),
+      ])
+    : [null, null];
   const risk = SHOW_WHAT_IF && cf.status === "ok" ? await riskSensitivity(buildRiskInput(farm, inputs)) : null;
   // Advisor tool: which drivers move this client most.
   const rank = params.rank === "operating_surplus" ? "operating_surplus" : "closing_cash";
@@ -98,7 +103,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
 
       <MoneyBreakdown cfc={cfc} farm={farm} />
 
-      {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} milkBenchmarks={await getMilkBenchmarks(farm)} milkStatement={milkStatement} />}
+      {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} milkBenchmarks={milkBenchmarks} milkLatest={milkLatest} milkYear={milkYear} />}
 
       {risk && (
         <WhatIfCard
