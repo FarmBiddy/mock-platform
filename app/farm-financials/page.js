@@ -17,6 +17,7 @@ import { buildCfCompareInput, buildRiskInput, runFarm } from "@/lib/financials/f
 import { cfCompare, riskSensitivity, riskTornado } from "@/lib/financial-engine/client";
 import TornadoCard from "@/components/financials/TornadoCard";
 import { cashflowChartData } from "@/lib/financials/views";
+import { getMilkBenchmarks } from "@/lib/benchmarks";
 import { monthLabel } from "@/lib/format/date";
 
 export const metadata = { title: "Farm Financials · FarmBiddy" };
@@ -86,7 +87,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
 
       <MoneyBreakdown cfc={cfc} farm={farm} />
 
-      {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} />}
+      {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} milkBenchmarks={await getMilkBenchmarks()} />}
 
       {risk && (
         <WhatIfCard

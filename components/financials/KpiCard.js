@@ -3,46 +3,56 @@ import EngineGate from "@/components/financials/EngineGate";
 import { Stat } from "@/components/financials/PlatformCards";
 import { formatCurrency } from "@/lib/format/currency";
 import { monthLabel } from "@/lib/format/date";
+import { MILK_METRICS, compareToAverage } from "@/lib/benchmarks-core";
 
 /** Engine ratios are null when not computable → "—". */
 const cents = (v) => (v == null ? "—" : `${v.toLocaleString("en-IE", { maximumFractionDigits: 1 })}c`);
 const litres = (v) => (v == null ? "—" : `${Math.round(v).toLocaleString("en-IE")} L`);
 
-/**
- * Milk quality vs the best Irish herds. Placeholders: the figures will come from the processor's
- * milk statements (platform data) and the comparison from an engine benchmark function; neither exists yet.
- */
-const QUALITY = [
-  ["Cell count (SCC)", "Udder health · lower is better"],
-  ["Bacteria (TBC)", "Milk hygiene · lower is better"],
-  ["Butterfat", "Higher pays more"],
-  ["Protein", "Higher pays more"],
-];
+const POSITION = {
+  above: "Above average",
+  below: "Below average",
+  about: "About average",
+};
 
-function MilkQuality() {
+/**
+ * Milk quality vs the Irish average: SCC, TBC, butterfat, protein. Averages come from lib/benchmarks.js
+ * (CSO live for fat / protein, ICBF by hand for SCC); the farm's own figures will come from milk.quality
+ * (engine 1.1.0, from the co-op's milk statements) — until then `quality` is null and they show "—".
+ * @param {{ benchmarks: Record<string, { average: number, source: string } | null>, quality?: Record<string, number> | null }} props
+ */
+function MilkQuality({ benchmarks, quality = null }) {
   return (
     <div className="mt-5 border-t border-stone-100 pt-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-sm font-semibold text-stone-800">Milk quality</p>
-        <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600">Coming soon · from your milk statements</span>
+        {!quality && <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600">Your figures: coming soon, from your milk statements</span>}
       </div>
-      <p className="mt-0.5 text-xs text-stone-500">How your milk compares with the top 10% of Irish herds.</p>
+      <p className="mt-0.5 text-xs text-stone-500">How your milk compares with the Irish average.</p>
       <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {QUALITY.map(([label, hint]) => (
-          <div key={label} className="rounded-xl bg-stone-50 p-3 ring-1 ring-stone-200/70">
-            <p className="text-xs text-stone-500">{label}</p>
-            <p className="mt-1 text-lg font-semibold text-stone-400">—</p>
-            <p className="text-[11px] text-stone-400">Top Irish herds: —</p>
-            <p className="mt-1 text-[11px] text-stone-500">{hint}</p>
-          </div>
-        ))}
+        {Object.entries(MILK_METRICS).map(([metric, m]) => {
+          const avg = benchmarks?.[metric];
+          const farm = quality?.[metric];
+          const vs = compareToAverage(metric, farm, avg?.average);
+          const tone = !vs ? "" : vs.good === null ? "bg-stone-100 text-stone-700" : vs.good ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800";
+          return (
+            <div key={metric} className="rounded-xl bg-stone-50 p-3 ring-1 ring-stone-200/70">
+              <p className="text-xs text-stone-500">{m.label}</p>
+              <p className={`mt-1 text-lg font-semibold ${farm == null ? "text-stone-400" : "text-stone-900"}`}>{farm == null ? "—" : m.show(farm)}</p>
+              {vs && <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${tone}`}>{POSITION[vs.position]}</span>}
+              <p className="mt-1 text-[11px] text-stone-600">Irish average: {avg ? m.show(avg.average) : "not published yet"}</p>
+              {avg && <p className="text-[10px] text-stone-400">{avg.source}</p>}
+              <p className="mt-1 text-[11px] text-stone-500">{m.hint}</p>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
 /** Dairy key figures from kpi.summary (actual months only), in plain words. Dairy-specific: shown for enterprise "dairy". */
-export default function KpiCard({ response, params, describePath }) {
+export default function KpiCard({ response, params, describePath, milkBenchmarks }) {
   return (
     <Card
       title="Key figures"
@@ -61,7 +71,7 @@ export default function KpiCard({ response, params, describePath }) {
           </div>
         )}
       </EngineGate>
-      <MilkQuality />
+      <MilkQuality benchmarks={milkBenchmarks} />
     </Card>
   );
 }

@@ -1,0 +1,13 @@
+{
+  "_note": "Milk-quality reference figures the platform sends to the engine (milk.quality `benchmarks`). Fat and protein come live from the CSO (lib/benchmarks.js); `cso_fallback` is the last known CSO month, used if the API is down. The others are entered by hand with their source until a data agreement (ICBF / co-op) makes them automatic. null = no public figure yet.",
+  "manual": {
+    "scc_k": {
+      "average": 179,
+      "source": "ICBF, milk-recorded herds",
+      "as_of": "2026-07",
+      "url": "https://www.agriland.ie/farming-news/how-does-your-herds-milk-compare-to-the-average/"
+    },
+    "tbc_k": null
+  },
+  "cso_fallback": { "month": "202608", "label": "2026 August", "fat_pct": 4.5, "protein_pct": 3.61 }
+}
