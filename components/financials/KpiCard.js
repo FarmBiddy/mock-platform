@@ -12,6 +12,24 @@ const litres = (v) => (v == null ? "—" : `${Math.round(v).toLocaleString("en-I
 const POSITION = { above: "Above average", below: "Below average", about: "About average" };
 const TONE = { good: "bg-emerald-50 text-emerald-800 ring-emerald-200", bad: "bg-amber-50 text-amber-800 ring-amber-200", even: "bg-stone-100 text-stone-700 ring-stone-200" };
 
+/** A sub-section of Key figures: its own tinted panel with an icon and a clear heading, so it doesn't blend into the card. */
+function Panel({ icon, title, subtitle, children, className = "" }) {
+  return (
+    <section className={`rounded-2xl bg-stone-50 p-4 ring-1 ring-stone-200/80 ${className}`}>
+      <div className="flex items-start gap-3">
+        <span aria-hidden className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-lg ring-1 ring-stone-200">
+          {icon}
+        </span>
+        <div>
+          <h3 className="text-base font-semibold text-stone-900">{title}</h3>
+          {subtitle && <p className="text-xs text-stone-500">{subtitle}</p>}
+        </div>
+      </div>
+      <div className="mt-3">{children}</div>
+    </section>
+  );
+}
+
 /**
  * Milk quality vs the average: one clean tile per measure (name, the farm's figure, the average, a coloured
  * label); sources and "which way is better" go once in the footer. Averages: lib/benchmarks.js (ICBF weekly
@@ -27,12 +45,13 @@ function MilkQuality({ benchmarks, statement = null }) {
   for (const [metric, b] of Object.entries(benchmarks ?? {})) if (b) (bySource[b.source] ??= []).push(MILK_METRICS[metric].label.toLowerCase());
   const sources = Object.entries(bySource).map(([source, names]) => `${names.join(" and ")}: ${source}`);
   return (
-    <div className="mt-5 border-t border-stone-100 pt-4">
-      <p className="text-sm font-semibold text-stone-800">Milk quality</p>
-      <p className="mt-0.5 text-xs text-stone-500">
-        {statement ? `From your ${statement.label} milk statement, compared with other Irish herds.` : "Compared with other Irish herds."}
-      </p>
-      <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <Panel
+      icon="🧪"
+      title="Milk quality"
+      subtitle={statement ? `From your ${statement.label} milk statement, compared with other Irish herds` : "Compared with other Irish herds"}
+      className="mt-4"
+    >
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {Object.entries(MILK_METRICS).map(([metric, m]) => {
           const avg = benchmarks?.[metric];
           const farm = statement?.values?.[metric];
@@ -54,7 +73,7 @@ function MilkQuality({ benchmarks, statement = null }) {
       <p className="mt-3 text-[11px] leading-relaxed text-stone-400">
         Lower is better for cell count and bacteria; higher is better for butterfat and protein. Averages: {sources.join(" · ")}.
       </p>
-    </div>
+    </Panel>
   );
 }
 
@@ -94,10 +113,9 @@ function KeyFigures({ r }) {
     .sort((x, y) => y[1] - x[1])
     .slice(0, 3);
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <div>
-        <p className="text-sm font-semibold text-stone-800">A litre of milk</p>
-        <p className="mt-1 text-sm text-stone-700">
+    <div className="grid gap-4 lg:grid-cols-2">
+      <Panel icon="🥛" title="A litre of milk" subtitle="What each litre you sell brings in, and where it goes">
+        <p className="text-sm text-stone-700">
           For every litre you sell, you get about <strong>{cents(litre.revenue)}</strong>.{" "}
           {litre.operating_surplus >= 0 ? (
             <>
@@ -115,10 +133,9 @@ function KeyFigures({ r }) {
             Biggest costs per litre: {biggest.map(([line, v]) => `${labelForCost(line)} ${cents(v)}`).join(" · ")}
           </p>
         )}
-      </div>
-      <div>
-        <p className="text-sm font-semibold text-stone-800">A cow</p>
-        <p className="mt-1 text-sm text-stone-700">
+      </Panel>
+      <Panel icon="🐄" title="A cow" subtitle={`Your farm’s totals shared out over your ${r.milking_cows} milking cows`}>
+        <p className="text-sm text-stone-700">
           So far this year, each cow brought in about <strong>{money(cow.revenue)}</strong>.{" "}
           {cow.operating_surplus >= 0 ? (
             <>
@@ -133,9 +150,9 @@ function KeyFigures({ r }) {
         <SplitBar total={cow.revenue} costs={cow.costs} left={cow.operating_surplus} show={money} />
         <p className="mt-2 text-xs text-stone-500">
           Each cow gave {litres(cow.milk_litres)} of milk
-          {r.debt ? ` · you owe ${money(r.debt.per_cow)} in loans for each cow (${money(r.debt.balance)} in total)` : ""} · {r.milking_cows} milking cows
+          {r.debt ? ` · you owe ${money(r.debt.per_cow)} in loans for each cow (${money(r.debt.balance)} in total)` : ""}
         </p>
-      </div>
+      </Panel>
     </div>
   );
 }
