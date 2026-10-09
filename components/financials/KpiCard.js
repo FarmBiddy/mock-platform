@@ -35,34 +35,33 @@ const span = (from, to) =>
   from.year === to.year && from.month === to.month ? `${monthLabel(from.month)} ${from.year}` : `${monthLabel(from.month)} ${from.year} – ${monthLabel(to.month)} ${to.year}`;
 
 /**
- * Milk quality from milk.quality (engine 1.1.0): one clean tile per measure — the latest statement month's
- * figure, the average (same season, so a fair comparison) and the engine's verdict (position + whether it is
- * better). Underneath, one line for the last 12 months (litre-weighted) and the EU limits. The platform only
- * supplies the averages (lib/benchmarks.js) and the words; every comparison is the engine's.
- * @param {{ benchmarks: Record<string, { label: string, average: number, source: string } | null>,
- *   latest?: object | null, year?: object | null }} props  latest / year: milk.quality responses
+ * Milk quality from milk.quality (engine 1.1.0): one clean tile per measure — the farm's last 12 months
+ * (litre-weighted), the average for the same months (the engine weights the monthly averages by the farm's
+ * own litres, `average_basis: "litre_weighted_monthly"`) and the engine's verdict. Underneath, the latest
+ * statement as recorded and the EU limits. The platform only supplies the averages (lib/benchmarks.js) and words.
+ * @param {{ benchmarks: Record<string, { label: string, source: string } | null> | null,
+ *   latest?: { year: number, month: number, values: Record<string, number> } | null, year?: object | null }} props
  */
 function MilkQuality({ benchmarks, latest = null, year = null }) {
-  const now = latest?.status === "ok" ? latest.result : null;
   const twelve = year?.status === "ok" ? year.result : null;
   // one footer line per source: "butterfat and protein: CSO, …"
   const bySource = {};
   for (const [metric, b] of Object.entries(benchmarks ?? {})) if (b) (bySource[b.source] ??= []).push(MILK_METRICS[metric].label.toLowerCase());
   const sources = Object.entries(bySource).map(([source, names]) => `${names.join(" and ")}: ${source}`);
   const breaches = twelve ? [...twelve.compliance.scc_breach_months.map(() => "cell count"), ...twelve.compliance.tbc_breach_months.map(() => "bacteria")] : [];
+  const show = (metric, v) => `${MILK_METRICS[metric].value(v)}${MILK_METRICS[metric].unit === "%" ? "%" : ""}`;
   return (
     <Panel
       icon="🧪"
       title="Milk quality"
-      subtitle={now ? `Your ${span(now.from, now.to)} milk statement, compared with other Irish herds at the same time of year` : "From your co-op milk statements"}
+      subtitle={twelve ? `Your last 12 months (${span(twelve.from, twelve.to)}), compared with other Irish herds over the same months` : "From your co-op milk statements"}
       className="mt-4"
     >
-      {!now && latest && <p className="mb-2 text-xs text-stone-500">Couldn’t read the milk statements: {latest.error?.message ?? "missing figures"}.</p>}
+      {!twelve && year && <p className="mb-2 text-xs text-stone-500">Couldn’t read the milk statements: {year.error?.message ?? "missing figures"}.</p>}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {Object.entries(MILK_METRICS).map(([metric, m]) => {
-          const avg = benchmarks?.[metric];
-          const farm = now?.period?.[metric];
-          const vs = now?.vs_benchmarks?.[metric];
+          const farm = twelve?.period?.[metric];
+          const vs = twelve?.vs_benchmarks?.[metric];
           const tone = !vs?.position ? null : vs.better_than_average == null ? TONE.even : vs.better_than_average ? TONE.good : TONE.bad;
           return (
             <div key={metric} className="flex flex-col rounded-xl bg-white p-3 ring-1 ring-stone-200">
@@ -71,7 +70,7 @@ function MilkQuality({ benchmarks, latest = null, year = null }) {
                 <span className={`text-2xl font-semibold tabular-nums ${farm == null ? "text-stone-300" : "text-stone-900"}`}>{farm == null ? "—" : m.value(farm)}</span>
                 {farm != null && <span className="ml-1 text-xs text-stone-500">{m.unit}</span>}
               </p>
-              <p className="mt-0.5 text-xs text-stone-500">{avg ? `${avg.label} ${m.value(avg.average)}${m.unit === "%" ? "%" : ""}` : "No average published yet"}</p>
+              <p className="mt-0.5 text-xs text-stone-500">{vs?.average != null ? `${benchmarks[metric].label} ${show(metric, vs.average)}` : "No average published yet"}</p>
               {tone && (
                 <span className={`mt-2 self-start rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${tone}`}>
                   {POSITION[vs.position]}
@@ -82,18 +81,22 @@ function MilkQuality({ benchmarks, latest = null, year = null }) {
           );
         })}
       </div>
-      {twelve && (
+      {(latest || twelve) && (
         <p className="mt-3 rounded-lg bg-white px-3 py-2 text-xs text-stone-600 ring-1 ring-stone-200">
-          <strong>Last 12 months</strong> ({span(twelve.from, twelve.to)}): cell count {MILK_METRICS.scc_k.value(twelve.period.scc_k)}, bacteria{" "}
-          {MILK_METRICS.tbc_k.value(twelve.period.tbc_k)}, butterfat {MILK_METRICS.fat_pct.value(twelve.period.fat_pct)}%, protein{" "}
-          {MILK_METRICS.protein_pct.value(twelve.period.protein_pct)}%.{" "}
-          {breaches.length === 0 ? (
-            <span className="text-emerald-700">Within the EU milk limits every month ✓</span>
-          ) : (
-            <span className="text-amber-800">
-              Over the EU limit for {[...new Set(breaches)].join(" and ")} in {breaches.length} month{breaches.length === 1 ? "" : "s"}: talk to your vet or co-op, as it can stop milk collection.
-            </span>
+          {latest && (
+            <>
+              <strong>Latest statement ({monthLabel(latest.month)} {latest.year}):</strong>{" "}
+              {Object.keys(MILK_METRICS).map((metric) => `${MILK_METRICS[metric].label.toLowerCase()} ${show(metric, latest.values[metric])}`).join(" · ")}.{" "}
+            </>
           )}
+          {twelve &&
+            (breaches.length === 0 ? (
+              <span className="text-emerald-700">Within the EU milk limits every month ✓</span>
+            ) : (
+              <span className="text-amber-800">
+                Over the EU limit for {[...new Set(breaches)].join(" and ")} in {breaches.length} month{breaches.length === 1 ? "" : "s"}: talk to your vet or co-op, as it can stop milk collection.
+              </span>
+            ))}
         </p>
       )}
       <p className="mt-3 text-[11px] leading-relaxed text-stone-400">

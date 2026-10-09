@@ -1,6 +1,6 @@
 // Self-check for milk-quality benchmarks (CSO and ICBF readers, province lookup): part of `npm run check`.
 import assert from "node:assert/strict";
-import { parseCsoSolids, parseIcbfRunDate, parseIcbfScc, provinceOf } from "../lib/benchmarks-core.js";
+import { icbfRunDateIn, parseCsoSolids, parseCsoSolidsSeries, parseIcbfRunDate, parseIcbfRunDates, parseIcbfScc, provinceOf } from "../lib/benchmarks-core.js";
 
 // JSON-stat 2.0 shaped like CSO AKM01, with the statistics deliberately out of order and the last month unpublished
 const cso = {
@@ -36,4 +36,9 @@ assert.equal(parseIcbfRunDate('<select><option value="09-oct-2026">09-OCT-2026<o
 assert.equal(provinceOf("Co. Cork"), "Munster");
 assert.equal(provinceOf("Co. Galway"), "Connaught");
 assert.equal(provinceOf("Somewhere"), null);
+// monthly series for like-for-like years: every published month, and each month's newest ICBF week
+assert.deepEqual(parseCsoSolidsSeries(cso).map((r) => r.month), ["202606", "202607"], "unpublished month left out");
+const weeks = parseIcbfRunDates('<option value="02-oct-2026"><option value="25-sep-2026"><option value="04-sep-2026"><option value="18-sep-2026">');
+assert.equal(icbfRunDateIn(weeks, 2026, 9), "25-sep-2026");
+assert.equal(icbfRunDateIn(weeks, 2026, 8), null, "no week that month");
 console.log("benchmarks ok");

@@ -53,16 +53,13 @@ export default async function FarmFinancialsPage({ searchParams }) {
   const sized = historic.filter((h) => h.response.status === "ok");
   const prudent = sized.reduce((a, b) => (!a || b.response.result.new_loan.max_principal < a.response.result.new_loan.max_principal ? b : a), null);
   const otherPeriod = sized.find((h) => h !== prudent)?.response.result ?? null;
-  // Milk quality (milk.quality): the latest statement month against the latest averages (same season, so a fair
-  // comparison, done by the engine), and the last 12 months for the year figures and the EU limits.
-  const milkBenchmarks = await getMilkBenchmarks(farm);
-  const hasStatements = farm.months.some((m) => m.quality);
-  const [milkLatest, milkYear] = hasStatements
-    ? await Promise.all([
-        milkQuality(buildMilkQualityInput(farm, { count: 1, benchmarks: toEngineBenchmarks(milkBenchmarks) })),
-        milkQuality(buildMilkQualityInput(farm, { count: 12 })),
-      ])
-    : [null, null];
+  // Milk quality (milk.quality): the last 12 statement months against the average for the same months —
+  // the engine weights the monthly averages by the farm's own litres, so the year is compared like for like.
+  const milkInput = buildMilkQualityInput(farm, { count: 12 });
+  const milkBenchmarks = milkInput.months.length ? await getMilkBenchmarks(farm, milkInput.months) : null;
+  const milkYear = milkBenchmarks ? await milkQuality({ ...milkInput, benchmarks: toEngineBenchmarks(milkBenchmarks) }) : null;
+  const latest = farm.months.find((m) => m.month === farm.actual_through_month);
+  const milkLatest = latest?.quality ? { year: farm.year, month: latest.month, values: latest.quality } : null; // as recorded
   const risk = SHOW_WHAT_IF && cf.status === "ok" ? await riskSensitivity(buildRiskInput(farm, inputs)) : null;
   // Advisor tool: which drivers move this client most.
   const rank = params.rank === "operating_surplus" ? "operating_surplus" : "closing_cash";
