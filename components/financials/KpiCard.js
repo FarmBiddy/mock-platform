@@ -72,12 +72,13 @@ function LitreBar({ label, value, scale, color }) {
   );
 }
 
-function CowTile({ label, value, hint }) {
+/** One "each cow…" sentence, read top to bottom: "made" / €795 / "after farm costs". */
+function CowTile({ verb, value, rest }) {
   return (
     <div className="rounded-xl bg-white p-3 ring-1 ring-stone-200">
-      <p className="text-sm font-medium text-stone-700">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums text-stone-900">{value}</p>
-      {hint && <p className="mt-0.5 text-xs text-stone-500">{hint}</p>}
+      <p className="text-sm text-stone-600">{verb}</p>
+      <p className="mt-0.5 text-2xl font-semibold tabular-nums text-stone-900">{value}</p>
+      {rest && <p className="mt-0.5 text-xs text-stone-500">{rest}</p>}
     </div>
   );
 }
@@ -112,11 +113,12 @@ function KeyFigures({ r }) {
         <p className="mt-1 text-[11px] text-stone-400">Earnings include milk, schemes and other farm income.</p>
       </div>
       <div>
-        <p className="text-sm font-semibold text-stone-800">Per cow · {r.milking_cows} cows</p>
+        <p className="text-sm font-semibold text-stone-800">Each cow, on average</p>
+        <p className="text-xs text-stone-500">Your farm’s totals shared out over your {r.milking_cows} milking cows, so far this year.</p>
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <CowTile label="Left over" value={formatCurrency(r.per_cow.operating_surplus, r.currency)} hint="after farm costs" />
-          <CowTile label="Milk" value={litres(r.per_cow.milk_litres)} hint="so far this year" />
-          <CowTile label="Loans" value={r.debt ? formatCurrency(r.debt.per_cow, r.currency) : "—"} hint={r.debt ? `${formatCurrency(r.debt.balance, r.currency)} in total` : null} />
+          <CowTile verb="Each cow gave" value={litres(r.per_cow.milk_litres)} rest="of milk" />
+          <CowTile verb="Each cow made" value={formatCurrency(r.per_cow.operating_surplus, r.currency)} rest="after farm costs" />
+          {r.debt && <CowTile verb="Loans work out at" value={formatCurrency(r.debt.per_cow, r.currency)} rest={`a cow (${formatCurrency(r.debt.balance, r.currency)} in total)`} />}
         </div>
       </div>
     </div>
