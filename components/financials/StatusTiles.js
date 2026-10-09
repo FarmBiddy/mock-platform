@@ -65,7 +65,7 @@ export default function StatusTiles({ pl, cf, loans, kpi, plc, farm }) {
           tone: dscr >= DSCR_OK ? "good" : dscr >= 1 ? "warn" : "bad",
           answer: dscr >= DSCR_OK ? "Yes, comfortably" : dscr >= 1 ? "Just about" : "Surplus doesn’t cover them",
           value: `${formatCurrency(loan.total_monthly_payment, loan.currency)} / month`,
-          detail: `Surplus covers repayments ${times(dscr)} (Jan–${asOf}) · lenders look for ${times(DSCR_OK)}`,
+          detail: `Loan cover ${times(dscr)}: surplus vs repayments, Jan–${asOf} · lenders look for ${times(DSCR_OK)}`,
         }
       : { question: "Can I pay my loans?", tone: "none", answer: "Needs your figures", detail: "See loans below" },
   ];

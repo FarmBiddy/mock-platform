@@ -1,37 +1,42 @@
 import { loadFarm } from "@/lib/farm-edits";
-import { Badge, Card, COLORS } from "@/components/ui";
+import { Badge, Card } from "@/components/ui";
 import EngineGate, { withProvided } from "@/components/financials/EngineGate";
-import MonthlyChart from "@/components/financials/MonthlyChart";
-import CashChart from "@/components/financials/CashChart";
-import Breakdown, { StackedBreakdown, expenseRows, incomeRows } from "@/components/financials/Breakdown";
-import { EventsCard, LoansCard, Stat, SupplierDebtCard } from "@/components/financials/PlatformCards";
-import StatusTiles from "@/components/financials/StatusTiles";
+import CashflowChart from "@/components/financials/CashflowChart";
+import MoneyTiles from "@/components/financials/MoneyTiles";
+import MoneyBreakdown from "@/components/financials/MoneyBreakdown";
+import CheckFiguresNudge from "@/components/financials/CheckFiguresNudge";
+import { LoansCard } from "@/components/financials/PlatformCards";
 import KpiCard from "@/components/financials/KpiCard";
-import Change from "@/components/financials/Change";
 import WhatIfCard from "@/components/financials/WhatIfCard";
 import BorrowCard from "@/components/financials/BorrowCard";
 import SourcesToggle from "@/components/SourcesToggle";
 import ProLock from "@/components/ProLock";
 import { getViewer } from "@/lib/session";
-import { buildRiskInput, isProjected, runFarm } from "@/lib/financials/farm";
-import { riskSensitivity, riskTornado } from "@/lib/financial-engine/client";
+import { readStressTests } from "@/lib/stress";
+import { buildCfCompareInput, buildRiskInput, runFarm } from "@/lib/financials/farm";
+import { cfCompare, riskSensitivity, riskTornado } from "@/lib/financial-engine/client";
 import TornadoCard from "@/components/financials/TornadoCard";
-import { cashChartData, surplusChartData } from "@/lib/financials/views";
-import { formatCurrency } from "@/lib/format/currency";
+import { cashflowChartData } from "@/lib/financials/views";
+import { getMilkBenchmarks } from "@/lib/benchmarks";
 import { monthLabel } from "@/lib/format/date";
 
 export const metadata = { title: "Farm Financials · FarmBiddy" };
 
+/** The What-if is hidden for the first demo (new users found it confusing); the code stays, flip to bring it back. */
+const SHOW_WHAT_IF = false;
+
 /**
- * Farm Financials. Platform data → Financial Engine → display.
- * Every money figure on this page is engine-published (grouping for display only).
+ * Farm Financials, for people new to farm finance: money in, money out, money made, in plain words.
+ * Platform data → Financial Engine → display. Every money figure on this page is engine-published.
  */
 export default async function FarmFinancialsPage({ searchParams }) {
   const params = await searchParams;
   const farm = await loadFarm();
   const { pro, role } = await getViewer();
 
-  const { inputs, loans, plf, pl, kpi, plc, cap, cff, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
+  const { inputs, loans, plf, kpi, cap, cff, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
+  // Money in / out so far and where it came from / went: this year's actual months vs the same months last year.
+  const cfc = farm.prior_year?.length ? await cfCompare(buildCfCompareInput(farm)) : null;
 
   const asOf = monthLabel(farm.actual_through_month);
   // Say which month / loan a nested needs_input path points at, from the request that was sent.
@@ -42,15 +47,10 @@ export default async function FarmFinancialsPage({ searchParams }) {
     return item?.month ? `${monthLabel(item.month)}${item.year !== farm.year ? ` ${item.year}` : ""}` : null;
   };
   const forecastIssue = [plf, cff].find((r) => r && r.status !== "ok");
-  // This year vs last is Pro.
-  const vs = pro && plc?.status === "ok" ? plc.result : null;
-  // Base case only on load; the panel re-runs with the scenarios the farmer ticks.
-  const risk = cf.status === "ok" ? await riskSensitivity(buildRiskInput(farm, inputs)) : null;
-  // Advisor tool: which drivers move this client most (same months and loans as the what-if).
+  const risk = SHOW_WHAT_IF && cf.status === "ok" ? await riskSensitivity(buildRiskInput(farm, inputs)) : null;
+  // Advisor tool: which drivers move this client most.
   const rank = params.rank === "operating_surplus" ? "operating_surplus" : "closing_cash";
   const tornado = role === "advisor" && cf.status === "ok" ? await riskTornado({ ...buildRiskInput(farm, inputs), rank_by: rank }) : null;
-  const vsLabel = `vs Jan–${asOf} ${farm.year - 1}`;
-  const tag = (m) => ({ label: monthLabel(m.period.month), projected: isProjected(farm, m.period.month) });
 
   return (
     <div className="space-y-6 p-4 sm:p-6">
@@ -58,7 +58,8 @@ export default async function FarmFinancialsPage({ searchParams }) {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Farm Financials</h1>
           <p className="text-sm text-stone-500">
-            {farm.profile.farm_name} · {farm.year} · actuals to end of {asOf}, forecast after
+            {farm.profile.farm_name}’s money in {farm.year}: what came in, what went out and what’s left. Up to the end of {asOf} is what happened; after
+            that is our forecast.
           </p>
         </div>
         <SourcesToggle />
@@ -66,148 +67,47 @@ export default async function FarmFinancialsPage({ searchParams }) {
 
       {forecastIssue && (
         <p role="status" className="rounded-xl bg-amber-50 px-4 py-2 text-sm text-amber-900 ring-1 ring-amber-200">
-          Showing actual months only — the forecast couldn’t run ({forecastIssue.error?.message ?? "missing figures"}).
+          Showing what happened so far only — the forecast couldn’t run ({forecastIssue.error?.message ?? "missing figures"}).
         </p>
       )}
 
-      <StatusTiles pl={pl} cf={cf} loans={loans} kpi={kpi} plc={pro ? plc : null} farm={farm} />
+      <MoneyTiles cfc={cfc} farm={farm} />
 
-      <EngineGate response={pl} params={params} describePath={describePath}>
-        {({ months }) => (
-          <Card
-            title="Operating Surplus by month"
-            subtitle="Income minus operating costs, Jan–Dec. Hatched months after “Today” are forecast by the engine from last year’s pattern, this year’s trend and market prices."
-            badge={<Badge>pl.months</Badge>}
-          >
-            <MonthlyChart data={surplusChartData(farm, months)} />
-          </Card>
-        )}
-      </EngineGate>
+      <CheckFiguresNudge cfc={cfc} cf={cf} owner={role === "owner"} />
 
-      <Card title="Cash in the bank, month by month" subtitle="Month-end balance incl. loan repayments and machinery spend" badge={<Badge>cf.months</Badge>}>
+      <Card
+        title="Cashflow"
+        subtitle={`Money in, money out and money made, month by month. Paler bars after “Today” are our forecast for the rest of ${farm.year}.`}
+        badge={<Badge>cf.months</Badge>}
+      >
         <EngineGate response={cf} params={params} describePath={describePath}>
-          {(r) => {
-            const now = r.months.find((m) => m.period.month === farm.actual_through_month);
-            const lowest = r.months.reduce((a, b) => (b.closing_cash < a.closing_cash ? b : a));
-            return (
-              <>
-                <div className="mb-4 flex flex-wrap gap-8">
-                  <Stat label={`Balance end of ${asOf}`} value={formatCurrency(now?.closing_cash, r.currency)} />
-                  <Stat
-                    label="Lowest point this year"
-                    value={formatCurrency(lowest.closing_cash, r.currency)}
-                    danger={lowest.closing_cash < 0}
-                    hint={`${monthLabel(lowest.period.month)}${isProjected(farm, lowest.period.month) ? " (projected)" : ""}`}
-                  />
-                  <Stat label="Projected 31 Dec" value={formatCurrency(r.closing_cash, r.currency)} />
-                </div>
-                <CashChart data={cashChartData(farm, r.months)} />
-                {/* The advisor works in the detail: month by month starts open. */}
-                <details open={role === "advisor"} className="mt-4 text-sm">
-                  <summary className="cursor-pointer text-emerald-800 hover:underline">Show month by month</summary>
-                  <div className="mt-3 overflow-x-auto">
-                    <table className="w-full min-w-[32rem] tabular-nums">
-                      <thead className="text-left text-xs text-stone-500">
-                        <tr>
-                          <th className="py-1 font-medium">Month</th>
-                          <th className="py-1 text-right font-medium">Cash in</th>
-                          <th className="py-1 text-right font-medium">Cash out</th>
-                          <th className="py-1 text-right font-medium">Net</th>
-                          <th className="py-1 text-right font-medium">Month-end</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-stone-100">
-                        {r.months.map((m) => {
-                          const { label, projected } = tag(m);
-                          return (
-                            <tr key={label} className={projected ? "text-stone-500" : ""}>
-                              <td className="py-1.5">
-                                {label}
-                                {projected && <span className="ml-1 text-xs">(proj.)</span>}
-                              </td>
-                              <td className="py-1.5 text-right">{formatCurrency(m.cash_in, r.currency)}</td>
-                              <td className="py-1.5 text-right">{formatCurrency(m.cash_out, r.currency)}</td>
-                              <td className={`py-1.5 text-right ${m.net_cash_flow < 0 ? "text-red-700" : ""}`}>{formatCurrency(m.net_cash_flow, r.currency)}</td>
-                              <td className={`py-1.5 text-right font-medium ${m.closing_cash < 0 ? "text-red-700" : ""}`}>{formatCurrency(m.closing_cash, r.currency)}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                      <tfoot className="border-t border-stone-200 font-semibold">
-                        <tr>
-                          <td className="py-1.5">Year</td>
-                          <td className="py-1.5 text-right">{formatCurrency(r.cash_in, r.currency)}</td>
-                          <td className="py-1.5 text-right">{formatCurrency(r.cash_out, r.currency)}</td>
-                          <td className="py-1.5 text-right">{formatCurrency(r.net_cash_flow, r.currency)}</td>
-                          <td className="py-1.5 text-right">{formatCurrency(r.closing_cash, r.currency)}</td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-                </details>
-              </>
-            );
-          }}
+          {(r) => <CashflowChart data={cashflowChartData(farm, r.months)} />}
         </EngineGate>
       </Card>
 
-      {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} />}
+      <MoneyBreakdown cfc={cfc} farm={farm} />
+
+      {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} milkBenchmarks={await getMilkBenchmarks(farm)} />}
 
       {risk && (
-        <ProLock pro={pro} title="What if milk drops or feed goes up?" value="Test price and cost shocks on your own cash and surplus before they happen.">
-          <WhatIfCard
-            initial={risk}
-            year={farm.year}
-            priceSource={farm.market?.milk_price != null ? (role === "owner" ? "set by your advisor" : "set in Farm Data") : "market price feed"}
-          />
-        </ProLock>
+        <WhatIfCard
+          initial={risk}
+          year={farm.year}
+          pro={pro}
+          stressTests={await readStressTests()}
+          stressBy={role === "owner" ? "your advisor" : null}
+          priceSource={farm.market?.milk_price != null ? (role === "owner" ? "set by your advisor" : "set in Farm Data") : "market price feed"}
+        />
       )}
 
       {tornado && <TornadoCard response={tornado} rank={rank} />}
 
-      {/* Two balanced columns: income + loans on the left, expenses + borrowing capacity on the right. */}
+      {/* Loans and what more could be borrowed, side by side. */}
       <div className="grid items-start gap-6 lg:grid-cols-2">
-        <div className="space-y-6">
-          {pl.status === "ok" && (
-            <Card title="Income YTD" subtitle={`Jan–${asOf}`} badge={<Badge>pl.months · ytd</Badge>}>
-              <StackedBreakdown
-                rows={incomeRows(pl.result.ytd.revenue)}
-                total={pl.result.ytd.revenue.total}
-                currency={pl.result.currency}
-                change={vs && <Change leaf={vs.revenue.total} label={vsLabel} />}
-              />
-              {vs && vs.revenue.milk.change !== 0 && (
-                <p className="mt-3 text-xs text-stone-500">
-                  Milk income {vs.revenue.milk.change > 0 ? "up" : "down"} {formatCurrency(Math.abs(vs.revenue.milk.change))}: {formatCurrency(vs.milk.volume_effect)} from{" "}
-                  {vs.milk.litres.change >= 0 ? "more" : "fewer"} litres, {formatCurrency(vs.milk.price_effect)} from{" "}
-                  {vs.milk.price_c.change >= 0 ? "a better" : "a lower"} price.
-                </p>
-              )}
-            </Card>
-          )}
-          <LoansCard response={loans} loans={farm.loans} params={params} describePath={describePath} />
-        </div>
-        <div className="space-y-6">
-          {pl.status === "ok" && (
-            <Card title="Expenses YTD" subtitle={`Operating costs, Jan–${asOf}. Loan repayments excluded.`} badge={<Badge>pl.months · ytd</Badge>}>
-              <Breakdown
-                rows={expenseRows(pl.result.ytd.costs.lines)}
-                total={pl.result.ytd.costs.total}
-                color={COLORS.costs}
-                currency={pl.result.currency}
-                change={vs && <Change leaf={vs.costs.total} label={vsLabel} upIsGood={false} />}
-              />
-            </Card>
-          )}
-          <ProLock pro={pro} title="How much more could you borrow?" value="The loan your surplus can carry at the bank’s cover, worked out before you ask.">
-            <BorrowCard response={cap} params={params} describePath={describePath} />
-          </ProLock>
-        </div>
-      </div>
-
-      <div className="grid items-start gap-6 lg:grid-cols-2">
-        <EventsCard data={farm.events} />
-        <SupplierDebtCard data={farm.suppliers} />
+        <LoansCard response={loans} loans={farm.loans} params={params} describePath={describePath} />
+        <ProLock pro={pro} title="Could the farm take on a new loan?" value="See how much the farm could borrow and what it would cost a month, before you talk to a bank.">
+          <BorrowCard response={cap} params={params} describePath={describePath} />
+        </ProLock>
       </div>
     </div>
   );

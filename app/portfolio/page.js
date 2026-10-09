@@ -12,8 +12,8 @@ import { formatMarginPct } from "@/lib/format/percent";
 import { ADVISOR, getViewer } from "@/lib/session";
 import { readShares } from "@/lib/shared";
 import { readNotes } from "@/lib/notes";
-import BiddyBox from "@/components/BiddyBox";
-import { suggestionsFor } from "@/lib/biddy-suggestions";
+import StressEditor from "@/components/StressEditor";
+import { readStressTests } from "@/lib/stress";
 
 export const metadata = { title: "Portfolio · FarmBiddy" };
 
@@ -41,7 +41,8 @@ const byRisk = (a, b) =>
   count(b.items, "warn") - count(a.items, "warn") ||
   (a.lowest?.closing_cash ?? Infinity) - (b.lowest?.closing_cash ?? Infinity);
 
-export default async function PortfolioPage() {
+export default async function PortfolioPage({ searchParams }) {
+  const { stress } = await searchParams;
   const viewer = await getViewer();
   if (viewer.role !== "advisor") redirect("/dashboard");
   if (viewer.farmId) redirect("/portfolio/leave"); // close the open client first
@@ -59,7 +60,6 @@ export default async function PortfolioPage() {
         </p>
       </div>
 
-      <BiddyBox placeholder="Ask Biddy about your clients…" questions={suggestionsFor(viewer)} />
 
       {shares.length > 0 && (
         <Card title="Shared by your clients" subtitle="Views a client prepared and sent you, newest first">
@@ -158,6 +158,8 @@ export default async function PortfolioPage() {
         </div>
         <p className="mt-4 text-xs text-stone-500">Portfolio averages and benchmarks need an engine function — until then clients are shown side by side.</p>
       </Card>
+
+      <StressEditor tests={await readStressTests()} status={["saved", "reset"].includes(stress) ? stress : null} />
     </div>
   );
 }

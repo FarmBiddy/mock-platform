@@ -10,7 +10,10 @@ export function presetSummary(farm, k) {
   const [y1, y2, y3] = Array.from({ length: PRESET_YEARS }, (_, i) => effectiveValue(farm, path(k, `milk_price.${i}`)));
   const milk = y1 === y2 && y2 === y3 ? `Milk at ${cents(y1)}` : `Milk ${cents(y1)}, ${cents(y2)}, then ${cents(y3)}`;
   const infl = effectiveValue(farm, path(k, "cost_inflation_pct"));
-  return infl == null ? milk : `${milk}; costs ${infl >= 0 ? "+" : ""}${infl}% a year`;
+  const rates = effectiveValue(farm, path(k, "interest_rate_shift_pp"));
+  return [milk, infl == null ? null : `costs ${infl >= 0 ? "+" : ""}${infl}% a year`, rates ? `variable rates ${rates > 0 ? "+" : ""}${rates} pp` : null]
+    .filter(Boolean)
+    .join("; ");
 }
 
 /**
@@ -33,7 +36,8 @@ export default function PresetEditor({ farm, presetKeys, editedKeys, current }) 
                 <th className="py-1 pr-3 font-medium">Milk year 1 €/L</th>
                 <th className="py-1 pr-3 font-medium">Year 2 €/L</th>
                 <th className="py-1 pr-3 font-medium">Year 3+ €/L</th>
-                <th className="py-1 font-medium">Costs % a year</th>
+                <th className="py-1 pr-3 font-medium">Costs % a year</th>
+                <th className="py-1 font-medium">Variable rates ± pp</th>
               </tr>
             </thead>
             <tbody>
@@ -58,7 +62,7 @@ export default function PresetEditor({ farm, presetKeys, editedKeys, current }) 
                       />
                     </td>
                   ))}
-                  <td className="py-1.5">
+                  <td className="py-1.5 pr-3">
                     <input
                       name={path(k, "cost_inflation_pct")}
                       type="number"
@@ -68,6 +72,19 @@ export default function PresetEditor({ farm, presetKeys, editedKeys, current }) 
                       required
                       aria-label={`${farm.plan_presets[k].label} cost inflation, % a year`}
                       defaultValue={effectiveValue(farm, path(k, "cost_inflation_pct"))}
+                      className={input}
+                    />
+                  </td>
+                  <td className="py-1.5">
+                    <input
+                      name={path(k, "interest_rate_shift_pp")}
+                      type="number"
+                      step="0.25"
+                      min="-3"
+                      max="10"
+                      required
+                      aria-label={`${farm.plan_presets[k].label} variable rate change, points vs today`}
+                      defaultValue={effectiveValue(farm, path(k, "interest_rate_shift_pp"))}
                       className={input}
                     />
                   </td>

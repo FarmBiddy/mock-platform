@@ -61,4 +61,11 @@ assert.equal(effectiveValue(plan, "plan_presets.base.assumptions.milk_price.2"),
 assert.equal(effectiveValue(plan, "plan_presets.base.assumptions.cost_inflation_pct"), 2);
 assert.deepEqual(plan.plan_presets.base.assumptions.milk_price, [0.47], "base must not change");
 
+// preset rate change: owned by the advisor, one value → one-item list, missing reads as 0 (as today)
+const rated = applyEdits(plan, { "plan_presets.base.assumptions.interest_rate_shift_pp": 1.5 });
+assert.deepEqual(rated.plan_presets.base.assumptions.interest_rate_shift_pp, [1.5]);
+assert.equal(effectiveValue(plan, "plan_presets.base.assumptions.interest_rate_shift_pp"), 0);
+assert.equal(ownerOf("plan_presets.cautious.assumptions.interest_rate_shift_pp"), "advisor");
+assert.deepEqual(cleanEdits({ "plan_presets.base.assumptions.interest_rate_shift_pp": 12 }), {}, "out of range");
+
 console.log("farm edits ok");

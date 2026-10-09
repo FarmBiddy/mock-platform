@@ -23,7 +23,7 @@
           "when_not_positive": [
             "result.new_loan.max_principal"
           ],
-          "text": "Not at the moment. After {result.drawings} of drawings and {result.tax} of tax you can repay {result.repayment_capacity} a year, but your current loans take {result.debt_service} ({result.repayment_cover|times} cover; a lender wants {result.min_cover|times}). Bringing that cover up comes before any new loan."
+          "text": "Not at the moment. After {result.drawings} of drawings and {result.tax} of tax you can repay {result.repayment_capacity} a year, but your current loans take {result.debt_service} (cover after drawings and tax {result.repayment_cover|times}; a lender wants {result.min_cover|times}). Bringing that cover up comes before any new loan."
         }
       ]
     },
