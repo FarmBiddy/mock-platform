@@ -47,6 +47,11 @@ export default async function FarmFinancialsPage({ searchParams }) {
     return item?.month ? `${monthLabel(item.month)}${item.year !== farm.year ? ` ${item.year}` : ""}` : null;
   };
   const forecastIssue = [plf, cff].find((r) => r && r.status !== "ok");
+  // Latest co-op milk statement (platform record, shown as recorded) for the Milk quality tiles.
+  const lastQuality = farm.months.find((m) => m.month === farm.actual_through_month)?.quality;
+  const milkStatement = lastQuality
+    ? { label: new Date(Date.UTC(farm.year, farm.actual_through_month - 1)).toLocaleString("en-IE", { month: "long", timeZone: "UTC" }), values: lastQuality }
+    : null;
   const risk = SHOW_WHAT_IF && cf.status === "ok" ? await riskSensitivity(buildRiskInput(farm, inputs)) : null;
   // Advisor tool: which drivers move this client most.
   const rank = params.rank === "operating_surplus" ? "operating_surplus" : "closing_cash";
@@ -87,7 +92,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
 
       <MoneyBreakdown cfc={cfc} farm={farm} />
 
-      {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} milkBenchmarks={await getMilkBenchmarks(farm)} />}
+      {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} milkBenchmarks={await getMilkBenchmarks(farm)} milkStatement={milkStatement} />}
 
       {risk && (
         <WhatIfCard
