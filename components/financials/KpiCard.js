@@ -1,6 +1,7 @@
 import { Badge, Card } from "@/components/ui";
 import EngineGate from "@/components/financials/EngineGate";
 import { formatCurrency } from "@/lib/format/currency";
+import { labelForCost } from "@/lib/financial-engine/mapResult";
 import { monthLabel } from "@/lib/format/date";
 import { MILK_METRICS, compareToAverage } from "@/lib/benchmarks-core";
 
@@ -57,69 +58,83 @@ function MilkQuality({ benchmarks, statement = null }) {
   );
 }
 
-/** A bar for one per-litre figure, its length relative to the larger of earn / cost (bar geometry only). */
-function LitreBar({ label, value, scale, color }) {
+const euros = (v, currency) => (v == null ? "—" : formatCurrency(v, currency));
+
+/**
+ * One amount split in two: the whole bar is what comes in, the coral part pays costs, the green part is
+ * yours. Widths are shares of the engine's figures (bar geometry only). When costs are bigger than what
+ * comes in, there is no green part and a gentle amber note says so (never red).
+ */
+function SplitBar({ total, costs, left, show }) {
+  const losing = left != null && left < 0;
+  const costShare = total > 0 ? Math.min(costs / total, 1) * 100 : 100;
   return (
-    <div>
-      <div className="flex justify-between text-sm">
-        <span className="text-stone-600">{label}</span>
-        <span className="font-semibold tabular-nums">{cents(value)}</span>
+    <div className="mt-3">
+      <div className="flex h-7 overflow-hidden rounded-lg text-xs font-medium">
+        <div className="flex items-center bg-[#f28b82] px-2 text-rose-950" style={{ width: `${costShare}%` }}>
+          Costs {show(costs)}
+        </div>
+        {!losing && (
+          <div className="flex flex-1 items-center justify-end bg-[#22a06b] px-2 text-white">Yours {show(left)}</div>
+        )}
       </div>
-      <div className="mt-1 h-3 rounded-full bg-stone-100">
-        <div className="h-3 rounded-full" style={{ width: `${scale ? (Math.max(value ?? 0, 0) / scale) * 100 : 0}%`, background: color }} />
-      </div>
+      {losing && <p className="mt-1 text-xs text-amber-800">Costs are {show(-left)} more than what comes in.</p>}
     </div>
   );
 }
 
-/** One "each cow…" sentence, read top to bottom: "made" / €795 / "after farm costs". */
-function CowTile({ verb, value, rest }) {
-  return (
-    <div className="rounded-xl bg-white p-3 ring-1 ring-stone-200">
-      <p className="text-sm text-stone-600">{verb}</p>
-      <p className="mt-0.5 text-2xl font-semibold tabular-nums text-stone-900">{value}</p>
-      {rest && <p className="mt-0.5 text-xs text-stone-500">{rest}</p>}
-    </div>
-  );
-}
-
-/** kpi.summary in two easy reads: a litre of milk (earn vs cost, what's left) and per cow. */
+/** kpi.summary in two easy reads, each a sentence and a split bar: a litre of milk, and a cow. */
 function KeyFigures({ r }) {
-  const earn = r.per_litre_c.revenue;
-  const cost = r.per_litre_c.costs;
-  const left = r.per_litre_c.operating_surplus;
-  const scale = Math.max(earn ?? 0, cost ?? 0);
+  const litre = r.per_litre_c;
+  const cow = r.per_cow;
+  const money = (v) => euros(v, r.currency);
+  // biggest costs per litre, as the engine publishes them (no "other" sum on the platform)
+  const biggest = Object.entries(litre.cost_lines ?? {})
+    .filter(([, v]) => v > 0)
+    .sort((x, y) => y[1] - x[1])
+    .slice(0, 3);
   return (
-    <div className="grid gap-5 lg:grid-cols-[2fr_3fr]">
+    <div className="grid gap-6 lg:grid-cols-2">
       <div>
         <p className="text-sm font-semibold text-stone-800">A litre of milk</p>
-        <div className="mt-3 space-y-3">
-          <LitreBar label="You earn" value={earn} scale={scale} color="#22a06b" />
-          <LitreBar label="It costs you" value={cost} scale={scale} color="#f28b82" />
-        </div>
-        <p className="mt-3 rounded-lg bg-stone-50 px-3 py-2 text-sm text-stone-700">
-          {left == null ? (
-            "—"
-          ) : left >= 0 ? (
+        <p className="mt-1 text-sm text-stone-700">
+          For every litre you sell, you get about <strong>{cents(litre.revenue)}</strong>.{" "}
+          {litre.operating_surplus >= 0 ? (
             <>
-              <strong>{cents(left)}</strong> left over on every litre
+              About <strong>{cents(litre.costs)}</strong> pays the farm’s costs, and <strong>{cents(litre.operating_surplus)}</strong> is yours to keep.
             </>
           ) : (
             <>
-              Each litre costs <strong>{cents(-left)}</strong> more than it earns
+              But it costs about <strong>{cents(litre.costs)}</strong> to produce.
             </>
           )}
         </p>
-        <p className="mt-1 text-[11px] text-stone-400">Earnings include milk, schemes and other farm income.</p>
+        <SplitBar total={litre.revenue} costs={litre.costs} left={litre.operating_surplus} show={cents} />
+        {biggest.length > 0 && (
+          <p className="mt-2 text-xs text-stone-500">
+            Biggest costs per litre: {biggest.map(([line, v]) => `${labelForCost(line)} ${cents(v)}`).join(" · ")}
+          </p>
+        )}
       </div>
       <div>
-        <p className="text-sm font-semibold text-stone-800">Each cow, on average</p>
-        <p className="text-xs text-stone-500">Your farm’s totals shared out over your {r.milking_cows} milking cows, so far this year.</p>
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <CowTile verb="Each cow gave" value={litres(r.per_cow.milk_litres)} rest="of milk" />
-          <CowTile verb="Each cow made" value={formatCurrency(r.per_cow.operating_surplus, r.currency)} rest="after farm costs" />
-          {r.debt && <CowTile verb="You owe" value={formatCurrency(r.debt.per_cow, r.currency)} rest={`in loans for each cow (${formatCurrency(r.debt.balance, r.currency)} in total)`} />}
-        </div>
+        <p className="text-sm font-semibold text-stone-800">A cow</p>
+        <p className="mt-1 text-sm text-stone-700">
+          So far this year, each cow brought in about <strong>{money(cow.revenue)}</strong>.{" "}
+          {cow.operating_surplus >= 0 ? (
+            <>
+              <strong>{money(cow.costs)}</strong> paid the farm’s costs, and <strong>{money(cow.operating_surplus)}</strong> is yours.
+            </>
+          ) : (
+            <>
+              But each cow cost about <strong>{money(cow.costs)}</strong>.
+            </>
+          )}
+        </p>
+        <SplitBar total={cow.revenue} costs={cow.costs} left={cow.operating_surplus} show={money} />
+        <p className="mt-2 text-xs text-stone-500">
+          Each cow gave {litres(cow.milk_litres)} of milk
+          {r.debt ? ` · you owe ${money(r.debt.per_cow)} in loans for each cow (${money(r.debt.balance)} in total)` : ""} · {r.milking_cows} milking cows
+        </p>
       </div>
     </div>
   );
@@ -130,7 +145,7 @@ export default function KpiCard({ response, params, describePath, milkBenchmarks
   return (
     <Card
       title="Key figures"
-      subtitle={response.status === "ok" ? `Per litre of milk and per cow, ${monthLabel(response.result.from.month)}–${monthLabel(response.result.to.month)}` : null}
+      subtitle={response.status === "ok" ? `What a litre of milk and a cow bring in, ${monthLabel(response.result.from.month)}–${monthLabel(response.result.to.month)}` : null}
       badge={<Badge>kpi.summary</Badge>}
     >
       <EngineGate response={response} params={params} describePath={describePath}>
