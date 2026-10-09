@@ -19,7 +19,7 @@ const POSITION = {
  * Milk quality vs the Irish average: SCC, TBC, butterfat, protein. Averages come from lib/benchmarks.js
  * (CSO live for fat / protein, ICBF by hand for SCC); the farm's own figures will come from milk.quality
  * (engine 1.1.0, from the co-op's milk statements) — until then `quality` is null and they show "—".
- * @param {{ benchmarks: Record<string, { average: number, source: string } | null>, quality?: Record<string, number> | null }} props
+ * @param {{ benchmarks: Record<string, { label: string, average: number, source: string } | null>, quality?: Record<string, number> | null }} props
  */
 function MilkQuality({ benchmarks, quality = null }) {
   return (
@@ -28,7 +28,7 @@ function MilkQuality({ benchmarks, quality = null }) {
         <p className="text-sm font-semibold text-stone-800">Milk quality</p>
         {!quality && <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600">Your figures: coming soon, from your milk statements</span>}
       </div>
-      <p className="mt-0.5 text-xs text-stone-500">How your milk compares with the Irish average.</p>
+      <p className="mt-0.5 text-xs text-stone-500">How your milk compares with the average for Irish herds.</p>
       <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {Object.entries(MILK_METRICS).map(([metric, m]) => {
           const avg = benchmarks?.[metric];
@@ -40,7 +40,7 @@ function MilkQuality({ benchmarks, quality = null }) {
               <p className="text-xs text-stone-500">{m.label}</p>
               <p className={`mt-1 text-lg font-semibold ${farm == null ? "text-stone-400" : "text-stone-900"}`}>{farm == null ? "—" : m.show(farm)}</p>
               {vs && <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${tone}`}>{POSITION[vs.position]}</span>}
-              <p className="mt-1 text-[11px] text-stone-600">Irish average: {avg ? m.show(avg.average) : "not published yet"}</p>
+              <p className="mt-1 text-[11px] text-stone-600">{avg?.label ?? "Irish average"}: {avg ? m.show(avg.average) : "not published yet"}</p>
               {avg && <p className="text-[10px] text-stone-400">{avg.source}</p>}
               <p className="mt-1 text-[11px] text-stone-500">{m.hint}</p>
             </div>

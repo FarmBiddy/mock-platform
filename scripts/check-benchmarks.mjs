@@ -1,6 +1,6 @@
 // Self-check for milk-quality benchmarks (CSO parser, above / below / about the average): part of `npm run check`.
 import assert from "node:assert/strict";
-import { compareToAverage, parseCsoSolids } from "../lib/benchmarks-core.js";
+import { compareToAverage, parseCsoSolids, parseIcbfRunDate, parseIcbfScc, provinceOf } from "../lib/benchmarks-core.js";
 
 // JSON-stat 2.0 shaped like CSO AKM01, with the statistics deliberately out of order and the last month unpublished
 const cso = {
@@ -27,4 +27,19 @@ assert.deepEqual(compareToAverage("fat_pct", 4.21, 4.18), { position: "about", g
 assert.deepEqual(compareToAverage("scc_k", 150, 179), { position: "below", good: true });
 assert.deepEqual(compareToAverage("scc_k", 230, 179), { position: "above", good: false });
 assert.equal(compareToAverage("tbc_k", 9, null), null, "no average published");
+
+// ICBF weekly SCC table: columns found by header (here reordered), regions with all figures, period from the title
+const icbf = `<table><tr><td><h4>% herd Breakdown for the 10 day period, &#039;29-SEP-2026&#039; to &#039;09-OCT-2026&#039;</h4></td></tr>
+<tr><td><b></b></td><td><b>Average SCC**</b></td><td><b>No. Herds Recorded</b></td><td><b>Best 40% SCC</b></td><td><b>Best 20% SCC</b></td></tr>
+<tr><td><b>Munster</b></td><td>182</td><td>689</td><td>158</td><td>121</td></tr>
+<tr><td><b>National</b></td><td>184</td><td>1,046</td><td>160</td><td>120</td></tr></table>`;
+assert.deepEqual(parseIcbfScc(icbf), {
+  period: "29-SEP-2026 to 09-OCT-2026",
+  regions: { Munster: { herds: 689, average: 182, best20: 121, best40: 158 }, National: { herds: 1046, average: 184, best20: 120, best40: 160 } },
+});
+assert.equal(parseIcbfScc("<html>page redesigned</html>"), null, "changed page → null (fallback kicks in)");
+assert.equal(parseIcbfRunDate('<select><option value="09-oct-2026">09-OCT-2026<option value="02-oct-2026">'), "09-oct-2026");
+assert.equal(provinceOf("Co. Cork"), "Munster");
+assert.equal(provinceOf("Co. Galway"), "Connaught");
+assert.equal(provinceOf("Somewhere"), null);
 console.log("benchmarks ok");

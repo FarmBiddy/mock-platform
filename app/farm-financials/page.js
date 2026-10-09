@@ -87,7 +87,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
 
       <MoneyBreakdown cfc={cfc} farm={farm} />
 
-      {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} milkBenchmarks={await getMilkBenchmarks()} />}
+      {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} milkBenchmarks={await getMilkBenchmarks(farm)} />}
 
       {risk && (
         <WhatIfCard

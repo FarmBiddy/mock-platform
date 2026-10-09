@@ -1,13 +1,47 @@
 {
-  "_note": "Milk-quality reference figures the platform sends to the engine (milk.quality `benchmarks`). Fat and protein come live from the CSO (lib/benchmarks.js); `cso_fallback` is the last known CSO month, used if the API is down. The others are entered by hand with their source until a data agreement (ICBF / co-op) makes them automatic. null = no public figure yet.",
+  "_note": "Milk-quality reference figures the platform sends to the engine (milk.quality `benchmarks`). Fat and protein come live from the CSO, SCC live from ICBF weekly milk recording (lib/benchmarks.js); the *_fallback entries are the last known figures, used if a source is down or changes its page. `manual` is for measures with no automatic source yet. null = no public figure yet.",
   "manual": {
-    "scc_k": {
-      "average": 179,
-      "source": "ICBF, milk-recorded herds",
-      "as_of": "2026-07",
-      "url": "https://www.agriland.ie/farming-news/how-does-your-herds-milk-compare-to-the-average/"
-    },
     "tbc_k": null
   },
-  "cso_fallback": { "month": "202608", "label": "2026 August", "fat_pct": 4.5, "protein_pct": 3.61 }
+  "cso_fallback": {
+    "month": "202608",
+    "label": "2026 August",
+    "fat_pct": 4.5,
+    "protein_pct": 3.61
+  },
+  "icbf_fallback": {
+    "period": "29-SEP-2026 to 09-OCT-2026",
+    "regions": {
+      "National": {
+        "herds": 1046,
+        "average": 184,
+        "best20": 120,
+        "best40": 160
+      },
+      "Munster": {
+        "herds": 689,
+        "average": 182,
+        "best20": 121,
+        "best40": 158
+      },
+      "Leinster": {
+        "herds": 231,
+        "average": 198,
+        "best20": 119,
+        "best40": 171
+      },
+      "Connaught": {
+        "herds": 35,
+        "average": 156,
+        "best20": 108,
+        "best40": 138
+      },
+      "Ulster": {
+        "herds": 53,
+        "average": 184,
+        "best20": 140,
+        "best40": 171
+      }
+    }
+  }
 }
