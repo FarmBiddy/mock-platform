@@ -27,4 +27,9 @@ html:not([data-sources]) .source-badge {
     background: white !important;
     padding: 0 !important;
   }
+  /* Bars and green/red cells are backgrounds; browsers drop backgrounds when printing unless told otherwise. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
