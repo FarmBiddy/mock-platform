@@ -18,6 +18,12 @@ const paidOffBy = (l) => {
  * @param {{ response: import("@/lib/financial-engine/client").EngineResponse<import("@/lib/financial-engine/client").LoanScheduleResult>, loans: object[], params?: object }} props
  */
 export function LoansCard({ response, loans, params, describePath }) {
+  if (!loans?.length)
+    return (
+      <Card title="Your loans" subtitle="What you owe, when it’s paid off, and where each payment goes">
+        <p className="text-sm text-stone-600">No loans on record.</p>
+      </Card>
+    );
   return (
     <Card title="Your loans" subtitle="What you owe, when it’s paid off, and where each payment goes" badge={<Badge>loan.schedule</Badge>}>
       <EngineGate response={response} params={params} describePath={describePath}>
