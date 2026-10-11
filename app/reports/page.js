@@ -10,7 +10,7 @@ import PrintButton from "@/components/reports/PrintButton";
 import ProLock from "@/components/ProLock";
 import { getViewer } from "@/lib/session";
 import {
-  Capacity, Cash, CashFlow, Comparison, CostBreakdown, FixedAssets, Headline, Kpis, Loans, NetProfit, ProfitAndLoss, Section, Sensitivity, BalanceSheet, period,
+  AdvisorInShort, BankInShort, Capacity, Cash, CashFlow, Comparison, CostBreakdown, FixedAssets, Headline, Kpis, Loans, NetProfit, ProfitAndLoss, Section, Sensitivity, BalanceSheet, period,
 } from "@/components/reports/Sections";
 
 export const metadata = { title: "Reports · FarmBiddy" };
@@ -85,6 +85,7 @@ export default async function ReportsPage({ searchParams }) {
       ) : kind === "bank" ? (
         <ProLock pro={pro} title="A report your bank will read" value="Profit, debt cover, borrowing capacity and balance sheet in one PDF, ready for the loan meeting.">
           <div className="space-y-6">
+            <BankInShort rep={rep} capacity={capacity} minCover={farm.new_loan_terms?.min_cover} />
             <Headline
               items={[
                 ["Net profit before tax", formatCurrency(rep.profit.net_profit_before_tax), `${fmt(rep.profit.net_margin_pct)}% net margin`],
@@ -104,6 +105,7 @@ export default async function ReportsPage({ searchParams }) {
         </ProLock>
       ) : kind === "advisor" ? (
         <>
+          <AdvisorInShort rep={rep} bench={DAIRY_COSTS} />
           <Kpis k={rep.kpis} />
           <CostBreakdown k={rep.kpis} c={rep.comparison} bench={DAIRY_COSTS} />
           <NetProfit p={rep.profit} />

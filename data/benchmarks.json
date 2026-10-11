@@ -10,7 +10,7 @@
       { "label": "Fertiliser & contractor", "lines": ["fertiliser", "contractor"], "average_c": 6.53 },
       { "label": "Vet, levies & other direct", "lines": ["vet", "levies"], "average_c": 5.41 },
       { "label": "Electricity & fuel", "lines": ["electricity", "fuel"], "average_c": 3.02 },
-      { "label": "Labour (paid)", "lines": ["labour"], "average_c": 1.03 },
+      { "label": "Paid labour", "lines": ["labour"], "average_c": 1.03 },
       { "label": "Land rent / lease", "lines": ["rent_lease"], "average_c": 1.53 },
       { "label": "Repairs, insurance & overheads", "lines": ["repairs_maintenance", "insurance", "professional_fees", "water", "other_operating_costs"], "average_c": 4.98 }
     ],
