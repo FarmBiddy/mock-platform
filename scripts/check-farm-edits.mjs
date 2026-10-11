@@ -1,6 +1,6 @@
 // Self-check for farmer edits (untrusted cookie / form input): part of `npm run check`.
 import assert from "node:assert/strict";
-import { applyEdits, cleanEdits, effectiveValue, ownerOf, valueAtPath } from "../lib/farm-edits-core.js";
+import { applyEdits, cleanEdits, effectiveValue, ownerOf, scaleForTarget, valueAtPath, yearValue } from "../lib/farm-edits-core.js";
 
 // whitelist + validation
 assert.deepEqual(
@@ -67,5 +67,27 @@ assert.deepEqual(rated.plan_presets.base.assumptions.interest_rate_shift_pp, [1.
 assert.equal(effectiveValue(plan, "plan_presets.base.assumptions.interest_rate_shift_pp"), 0);
 assert.equal(ownerOf("plan_presets.cautious.assumptions.interest_rate_shift_pp"), "advisor");
 assert.deepEqual(cleanEdits({ "plan_presets.base.assumptions.interest_rate_shift_pp": 12 }), {}, "out of range");
+
+// year totals: one scale factor per field, keeps the seasonal shape, month edits still win
+const year = {
+  months: [
+    { month: 1, pl: { milk_litres: 1000, milk_price: 0.4 }, lines: { feed: 100 }, cash: {} },
+    { month: 2, pl: { milk_litres: 3000, milk_price: 0.5 }, lines: { feed: 300 }, cash: {} },
+  ],
+};
+assert.equal(yearValue(year, "lines.feed"), 400);
+assert.equal(yearValue(year, "pl.milk_price"), 0.475, "litre-weighted");
+const f = scaleForTarget(year, {}, "lines.feed", 800);
+assert.equal(f, 2);
+assert.deepEqual(applyEdits(year, { "months_scale.lines.feed": f }).months.map((m) => m.lines.feed), [200, 600]);
+// month 1 typed by hand stays; the rest of the total goes to month 2
+const withMonth = { "months.1.lines.feed": 250 };
+const f2 = scaleForTarget(year, withMonth, "lines.feed", 800);
+assert.deepEqual(applyEdits(year, { ...withMonth, "months_scale.lines.feed": f2 }).months.map((m) => m.lines.feed), [250, 550]);
+const fp = scaleForTarget(year, {}, "pl.milk_price", 0.57);
+assert.ok(Math.abs(yearValue(applyEdits(year, { "months_scale.pl.milk_price": fp }), "pl.milk_price") - 0.57) < 1e-9);
+assert.equal(scaleForTarget({ months: [{ month: 1, lines: {} }] }, {}, "lines.feed", 100), null, "nothing to scale");
+assert.deepEqual(cleanEdits({ "months_scale.lines.feed": 2, "months_scale.lines.water": 2, "months_scale.cash.milk": 11 }), { "months_scale.lines.feed": 2 });
+assert.equal(ownerOf("months_scale.lines.feed"), "owner");
 
 console.log("farm edits ok");

@@ -13,11 +13,11 @@ import SourcesToggle from "@/components/SourcesToggle";
 import ProLock from "@/components/ProLock";
 import { getViewer } from "@/lib/session";
 import { readStressTests } from "@/lib/stress";
-import { buildCfCompareInput, buildRiskInput, runFarm } from "@/lib/financials/farm";
-import { cfCompare, riskSensitivity, riskTornado } from "@/lib/financial-engine/client";
+import { buildCfCompareInput, buildHistoricDebtCapacityInputs, buildMilkQualityInput, buildRiskInput, runFarm } from "@/lib/financials/farm";
+import { cfCompare, debtCapacity, milkQuality, riskSensitivity, riskTornado } from "@/lib/financial-engine/client";
 import TornadoCard from "@/components/financials/TornadoCard";
 import { cashflowChartData } from "@/lib/financials/views";
-import { getMilkBenchmarks } from "@/lib/benchmarks";
+import { getMilkBenchmarks, toEngineBenchmarks } from "@/lib/benchmarks";
 import { monthLabel } from "@/lib/format/date";
 
 export const metadata = { title: "Farm Financials · FarmBiddy" };
@@ -47,6 +47,19 @@ export default async function FarmFinancialsPage({ searchParams }) {
     return item?.month ? `${monthLabel(item.month)}${item.year !== farm.year ? ` ${item.year}` : ""}` : null;
   };
   const forecastIssue = [plf, cff].find((r) => r && r.status !== "ok");
+  // New loan: sized on what actually happened (last 12 months and last year), never the forecast; the
+  // lower of the two is the answer, the other is shown for context. Without a year of records: the year incl. forecast.
+  const historic = await Promise.all(buildHistoricDebtCapacityInputs(farm).map(async ({ key, input }) => ({ key, response: await debtCapacity(input) })));
+  const sized = historic.filter((h) => h.response.status === "ok");
+  const prudent = sized.reduce((a, b) => (!a || b.response.result.new_loan.max_principal < a.response.result.new_loan.max_principal ? b : a), null);
+  const otherPeriod = sized.find((h) => h !== prudent)?.response.result ?? null;
+  // Milk quality (milk.quality): the last 12 statement months against the average for the same months —
+  // the engine weights the monthly averages by the farm's own litres, so the year is compared like for like.
+  const milkInput = buildMilkQualityInput(farm, { count: 12 });
+  const milkBenchmarks = milkInput.months.length ? await getMilkBenchmarks(farm, milkInput.months) : null;
+  const milkYear = milkBenchmarks ? await milkQuality({ ...milkInput, benchmarks: toEngineBenchmarks(milkBenchmarks) }) : null;
+  const latest = farm.months.find((m) => m.month === farm.actual_through_month);
+  const milkLatest = latest?.quality ? { year: farm.year, month: latest.month, values: latest.quality } : null; // as recorded
   const risk = SHOW_WHAT_IF && cf.status === "ok" ? await riskSensitivity(buildRiskInput(farm, inputs)) : null;
   // Advisor tool: which drivers move this client most.
   const rank = params.rank === "operating_surplus" ? "operating_surplus" : "closing_cash";
@@ -87,7 +100,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
 
       <MoneyBreakdown cfc={cfc} farm={farm} />
 
-      {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} milkBenchmarks={await getMilkBenchmarks(farm)} />}
+      {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} milkBenchmarks={milkBenchmarks} milkLatest={milkLatest} milkYear={milkYear} />}
 
       {risk && (
         <WhatIfCard
@@ -106,7 +119,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <LoansCard response={loans} loans={farm.loans} params={params} describePath={describePath} />
         <ProLock pro={pro} title="Could the farm take on a new loan?" value="See how much the farm could borrow and what it would cost a month, before you talk to a bank.">
-          <BorrowCard response={cap} params={params} describePath={describePath} />
+          <BorrowCard response={prudent?.response ?? cap} actualOnly={Boolean(prudent)} other={otherPeriod} params={params} describePath={describePath} />
         </ProLock>
       </div>
     </div>

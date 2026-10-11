@@ -6,6 +6,9 @@ import { monthLabel } from "@/lib/format/date";
 const pct = (rate) => `${(rate * 100).toLocaleString("en-IE", { maximumFractionDigits: 2 })}%`;
 const euros = (v) => `€${v.toLocaleString("en-IE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const term = (months) => (months % 12 === 0 ? `${months / 12} years` : `${months} months`);
+/** "2025" for a calendar year, else "Oct 2025 – Sep 2026". */
+const periodLabel = ({ from, to }) =>
+  from.month === 1 && to.month === 12 && from.year === to.year ? String(from.year) : `${monthLabel(from.month)} ${from.year} – ${monthLabel(to.month)} ${to.year}`;
 
 /** One line of the "how we worked it out" ticket. */
 function Line({ label, value, sign = "", strong = false, hint }) {
@@ -25,10 +28,16 @@ function Line({ label, value, sign = "", strong = false, hint }) {
  * "Could the farm take on a new loan?" from debt.capacity, in plain words: the answer first, then how it
  * was worked out (every line is an engine value), then the bank's safety cushion explained.
  * Never alarming: a "not at the moment" answer is amber with a next step, not a red figure.
+ * `actualOnly`: the figures come from actual months only (Farm Financials sizes the loan on what happened);
+ * `other`: the other actual period's result, shown as context when it would allow more.
  */
-export default function BorrowCard({ response, params, describePath }) {
+export default function BorrowCard({ response, actualOnly = false, other = null, params, describePath }) {
   return (
-    <Card title="Could the farm take on a new loan?" subtitle="A guide from this year’s figures, not an offer from a bank" badge={<Badge>debt.capacity</Badge>}>
+    <Card
+      title="Could the farm take on a new loan?"
+      subtitle={actualOnly ? "Based on what actually happened on the farm, not on forecasts. A guide, not an offer from a bank" : "A guide from this year’s figures, not an offer from a bank"}
+      badge={<Badge>debt.capacity</Badge>}
+    >
       <EngineGate response={response} params={params} describePath={describePath}>
         {(r) => {
           const money = (v) => formatCurrency(v, r.currency);
@@ -45,6 +54,11 @@ export default function BorrowCard({ response, params, describePath }) {
                     That would mean repaying about <strong>{money(r.new_loan.monthly_payment_at_max)} a month</strong> for {term(r.new_loan.term_months)} (at{" "}
                     {pct(r.new_loan.annual_rate)} a year).
                   </p>
+                  {other && other.new_loan.max_principal > r.new_loan.max_principal && (
+                    <p className="mt-1.5 text-xs text-emerald-900/80">
+                      To be safe we use your weaker period ({periodLabel(r)}). Based on {periodLabel(other)} it would be up to about {money(other.new_loan.max_principal)}.
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="rounded-xl bg-amber-50 p-3 text-amber-950 ring-1 ring-amber-200">
@@ -57,7 +71,7 @@ export default function BorrowCard({ response, params, describePath }) {
               )}
 
               <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-stone-500">
-                How we worked it out · {monthLabel(r.from.month)}–{monthLabel(r.to.month)} {r.to.year}, including our forecast
+                How we worked it out · {periodLabel(r)}, {actualOnly ? "what actually happened" : "including our forecast"}
               </p>
               <dl className="mt-2 space-y-1.5 text-xs">
                 <Line label="The farm’s money left after farm costs" value={money(r.operating_surplus)} />

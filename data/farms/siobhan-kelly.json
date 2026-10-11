@@ -194,6 +194,12 @@
         "electricity": 1330,
         "repairs_maintenance": 1010,
         "levies": 60
+      },
+      "quality": {
+        "fat_pct": 4.9,
+        "protein_pct": 3.85,
+        "scc_k": 305,
+        "tbc_k": 19
       }
     },
     {
@@ -217,6 +223,12 @@
         "electricity": 1420,
         "levies": 230,
         "cattle_sales": 2160
+      },
+      "quality": {
+        "fat_pct": 4,
+        "protein_pct": 3.2,
+        "scc_k": 195,
+        "tbc_k": 12
       }
     },
     {
@@ -243,6 +255,12 @@
         "rent_lease": 15330,
         "levies": 510,
         "cattle_sales": 8640
+      },
+      "quality": {
+        "fat_pct": 3.85,
+        "protein_pct": 3.15,
+        "scc_k": 145,
+        "tbc_k": 11
       }
     },
     {
@@ -268,6 +286,12 @@
         "professional_fees": 3820,
         "levies": 640,
         "cattle_sales": 6480
+      },
+      "quality": {
+        "fat_pct": 3.85,
+        "protein_pct": 3.25,
+        "scc_k": 135,
+        "tbc_k": 10
       }
     },
     {
@@ -294,6 +318,12 @@
         "electricity": 1640,
         "repairs_maintenance": 3060,
         "levies": 720
+      },
+      "quality": {
+        "fat_pct": 3.9,
+        "protein_pct": 3.35,
+        "scc_k": 140,
+        "tbc_k": 10
       }
     },
     {
@@ -319,6 +349,12 @@
         "electricity": 1560,
         "levies": 660,
         "acres": 8230
+      },
+      "quality": {
+        "fat_pct": 4,
+        "protein_pct": 3.4,
+        "scc_k": 150,
+        "tbc_k": 11
       }
     },
     {
@@ -343,6 +379,12 @@
         "electricity": 1500,
         "repairs_maintenance": 6650,
         "levies": 590
+      },
+      "quality": {
+        "fat_pct": 4.15,
+        "protein_pct": 3.5,
+        "scc_k": 165,
+        "tbc_k": 12
       }
     },
     {
@@ -368,6 +410,12 @@
         "electricity": 1460,
         "levies": 510,
         "other_operating_costs": 1540
+      },
+      "quality": {
+        "fat_pct": 4.35,
+        "protein_pct": 3.6,
+        "scc_k": 180,
+        "tbc_k": 13
       }
     },
     {
@@ -391,6 +439,12 @@
         "electricity": 1420,
         "levies": 430,
         "cattle_sales": 4500
+      },
+      "quality": {
+        "fat_pct": 4.6,
+        "protein_pct": 3.75,
+        "scc_k": 205,
+        "tbc_k": 13
       }
     }
   ],
@@ -637,6 +691,12 @@
         "levies": 330,
         "cattle_sales": 10480,
         "biss": 21500
+      },
+      "quality": {
+        "fat_pct": 4.85,
+        "protein_pct": 3.9,
+        "scc_k": 235,
+        "tbc_k": 14
       }
     },
     {
@@ -661,6 +721,12 @@
         "levies": 180,
         "professional_fees": 2960,
         "cattle_sales": 6980
+      },
+      "quality": {
+        "fat_pct": 5,
+        "protein_pct": 4,
+        "scc_k": 285,
+        "tbc_k": 17
       }
     },
     {
@@ -684,6 +750,12 @@
         "electricity": 1290,
         "levies": 20,
         "biss": 9220
+      },
+      "quality": {
+        "fat_pct": 5.1,
+        "protein_pct": 4.05,
+        "scc_k": 335,
+        "tbc_k": 21
       }
     }
   ],

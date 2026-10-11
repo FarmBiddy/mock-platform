@@ -1,77 +1,205 @@
 import { Badge, Card } from "@/components/ui";
 import EngineGate from "@/components/financials/EngineGate";
-import { Stat } from "@/components/financials/PlatformCards";
 import { formatCurrency } from "@/lib/format/currency";
+import { labelForCost } from "@/lib/financial-engine/mapResult";
 import { monthLabel } from "@/lib/format/date";
-import { MILK_METRICS, compareToAverage } from "@/lib/benchmarks-core";
+import { MILK_METRICS } from "@/lib/benchmarks-core";
 
 /** Engine ratios are null when not computable → "—". */
 const cents = (v) => (v == null ? "—" : `${v.toLocaleString("en-IE", { maximumFractionDigits: 1 })}c`);
 const litres = (v) => (v == null ? "—" : `${Math.round(v).toLocaleString("en-IE")} L`);
 
-const POSITION = {
-  above: "Above average",
-  below: "Below average",
-  about: "About average",
-};
+const POSITION = { above: "Above average", below: "Below average", about: "About average" };
+const TONE = { good: "bg-emerald-50 text-emerald-800 ring-emerald-200", bad: "bg-amber-50 text-amber-800 ring-amber-200", even: "bg-stone-100 text-stone-700 ring-stone-200" };
+
+/** A sub-section of Key figures: its own tinted panel with an icon and a clear heading, so it doesn't blend into the card. */
+function Panel({ icon, title, subtitle, children, className = "" }) {
+  return (
+    <section className={`rounded-2xl bg-stone-50 p-4 ring-1 ring-stone-200/80 ${className}`}>
+      <div className="flex items-start gap-3">
+        <span aria-hidden className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-lg ring-1 ring-stone-200">
+          {icon}
+        </span>
+        <div>
+          <h3 className="text-base font-semibold text-stone-900">{title}</h3>
+          {subtitle && <p className="text-xs text-stone-500">{subtitle}</p>}
+        </div>
+      </div>
+      <div className="mt-3">{children}</div>
+    </section>
+  );
+}
+
+/** "Sept 2026" / "Oct 2025 – Sept 2026" from an engine from/to pair. */
+const span = (from, to) =>
+  from.year === to.year && from.month === to.month ? `${monthLabel(from.month)} ${from.year}` : `${monthLabel(from.month)} ${from.year} – ${monthLabel(to.month)} ${to.year}`;
 
 /**
- * Milk quality vs the Irish average: SCC, TBC, butterfat, protein. Averages come from lib/benchmarks.js
- * (CSO live for fat / protein, ICBF by hand for SCC); the farm's own figures will come from milk.quality
- * (engine 1.1.0, from the co-op's milk statements) — until then `quality` is null and they show "—".
- * @param {{ benchmarks: Record<string, { label: string, average: number, source: string } | null>, quality?: Record<string, number> | null }} props
+ * Milk quality from milk.quality (engine 1.1.0): one clean tile per measure — the farm's last 12 months
+ * (litre-weighted), the average for the same months (the engine weights the monthly averages by the farm's
+ * own litres, `average_basis: "litre_weighted_monthly"`) and the engine's verdict. Underneath, the latest
+ * statement as recorded and the EU limits. The platform only supplies the averages (lib/benchmarks.js) and words.
+ * @param {{ benchmarks: Record<string, { label: string, source: string } | null> | null,
+ *   latest?: { year: number, month: number, values: Record<string, number> } | null, year?: object | null }} props
  */
-function MilkQuality({ benchmarks, quality = null }) {
+function MilkQuality({ benchmarks, latest = null, year = null }) {
+  const twelve = year?.status === "ok" ? year.result : null;
+  // one footer line per source: "butterfat and protein: CSO, …"
+  const bySource = {};
+  for (const [metric, b] of Object.entries(benchmarks ?? {})) if (b) (bySource[b.source] ??= []).push(MILK_METRICS[metric].label.toLowerCase());
+  const sources = Object.entries(bySource).map(([source, names]) => `${names.join(" and ")}: ${source}`);
+  const breaches = twelve ? [...twelve.compliance.scc_breach_months.map(() => "cell count"), ...twelve.compliance.tbc_breach_months.map(() => "bacteria")] : [];
+  const show = (metric, v) => `${MILK_METRICS[metric].value(v)}${MILK_METRICS[metric].unit === "%" ? "%" : ""}`;
   return (
-    <div className="mt-5 border-t border-stone-100 pt-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-sm font-semibold text-stone-800">Milk quality</p>
-        {!quality && <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600">Your figures: coming soon, from your milk statements</span>}
-      </div>
-      <p className="mt-0.5 text-xs text-stone-500">How your milk compares with the average for Irish herds.</p>
-      <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <Panel
+      icon="🧪"
+      title="Milk quality"
+      subtitle={twelve ? `Your last 12 months (${span(twelve.from, twelve.to)}), compared with other Irish herds over the same months` : "From your co-op milk statements"}
+      className="mt-4"
+    >
+      {!twelve && year && <p className="mb-2 text-xs text-stone-500">Couldn’t read the milk statements: {year.error?.message ?? "missing figures"}.</p>}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {Object.entries(MILK_METRICS).map(([metric, m]) => {
-          const avg = benchmarks?.[metric];
-          const farm = quality?.[metric];
-          const vs = compareToAverage(metric, farm, avg?.average);
-          const tone = !vs ? "" : vs.good === null ? "bg-stone-100 text-stone-700" : vs.good ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800";
+          const farm = twelve?.period?.[metric];
+          const vs = twelve?.vs_benchmarks?.[metric];
+          const tone = !vs?.position ? null : vs.better_than_average == null ? TONE.even : vs.better_than_average ? TONE.good : TONE.bad;
           return (
-            <div key={metric} className="rounded-xl bg-stone-50 p-3 ring-1 ring-stone-200/70">
-              <p className="text-xs text-stone-500">{m.label}</p>
-              <p className={`mt-1 text-lg font-semibold ${farm == null ? "text-stone-400" : "text-stone-900"}`}>{farm == null ? "—" : m.show(farm)}</p>
-              {vs && <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${tone}`}>{POSITION[vs.position]}</span>}
-              <p className="mt-1 text-[11px] text-stone-600">{avg?.label ?? "Irish average"}: {avg ? m.show(avg.average) : "not published yet"}</p>
-              {avg && <p className="text-[10px] text-stone-400">{avg.source}</p>}
-              <p className="mt-1 text-[11px] text-stone-500">{m.hint}</p>
+            <div key={metric} className="flex flex-col rounded-xl bg-white p-3 ring-1 ring-stone-200">
+              <p className="text-sm font-medium text-stone-700">{m.label}</p>
+              <p className="mt-1">
+                <span className={`text-2xl font-semibold tabular-nums ${farm == null ? "text-stone-300" : "text-stone-900"}`}>{farm == null ? "—" : m.value(farm)}</span>
+                {farm != null && <span className="ml-1 text-xs text-stone-500">{m.unit}</span>}
+              </p>
+              <p className="mt-0.5 text-xs text-stone-500">{vs?.average != null ? `${benchmarks[metric].label} ${show(metric, vs.average)}` : "No average published yet"}</p>
+              {tone && (
+                <span className={`mt-2 self-start rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${tone}`}>
+                  {POSITION[vs.position]}
+                  {vs.better_than_average ? " ✓" : ""}
+                </span>
+              )}
             </div>
           );
         })}
       </div>
+      {(latest || twelve) && (
+        <p className="mt-3 rounded-lg bg-white px-3 py-2 text-xs text-stone-600 ring-1 ring-stone-200">
+          {latest && (
+            <>
+              <strong>Latest statement ({monthLabel(latest.month)} {latest.year}):</strong>{" "}
+              {Object.keys(MILK_METRICS).map((metric) => `${MILK_METRICS[metric].label.toLowerCase()} ${show(metric, latest.values[metric])}`).join(" · ")}.{" "}
+            </>
+          )}
+          {twelve &&
+            (breaches.length === 0 ? (
+              <span className="text-emerald-700">Within the EU milk limits every month ✓</span>
+            ) : (
+              <span className="text-amber-800">
+                Over the EU limit for {[...new Set(breaches)].join(" and ")} in {breaches.length} month{breaches.length === 1 ? "" : "s"}: talk to your vet or co-op, as it can stop milk collection.
+              </span>
+            ))}
+        </p>
+      )}
+      <p className="mt-3 text-[11px] leading-relaxed text-stone-400">
+        Lower is better for cell count and bacteria; higher is better for butterfat and protein. Averages: {sources.join(" · ")}.
+      </p>
+    </Panel>
+  );
+}
+
+const euros = (v, currency) => (v == null ? "—" : formatCurrency(v, currency));
+
+/**
+ * One amount split in two: the whole bar is what comes in, the coral part pays costs, the green part is
+ * yours. Widths are shares of the engine's figures (bar geometry only). When costs are bigger than what
+ * comes in, there is no green part and a gentle amber note says so (never red).
+ */
+function SplitBar({ total, costs, left, show }) {
+  const losing = left != null && left < 0;
+  const costShare = total > 0 ? Math.min(costs / total, 1) * 100 : 100;
+  return (
+    <div className="mt-3">
+      <div className="flex h-7 overflow-hidden rounded-lg text-xs font-medium">
+        <div className="flex items-center bg-[#f28b82] px-2 text-rose-950" style={{ width: `${costShare}%` }}>
+          Costs {show(costs)}
+        </div>
+        {!losing && (
+          <div className="flex flex-1 items-center justify-end bg-[#22a06b] px-2 text-white">Yours {show(left)}</div>
+        )}
+      </div>
+      {losing && <p className="mt-1 text-xs text-amber-800">Costs are {show(-left)} more than what comes in.</p>}
+    </div>
+  );
+}
+
+/** kpi.summary in two easy reads, each a sentence and a split bar: a litre of milk, and a cow. */
+function KeyFigures({ r }) {
+  const litre = r.per_litre_c;
+  const cow = r.per_cow;
+  const money = (v) => euros(v, r.currency);
+  // biggest costs per litre, as the engine publishes them (no "other" sum on the platform)
+  const biggest = Object.entries(litre.cost_lines ?? {})
+    .filter(([, v]) => v > 0)
+    .sort((x, y) => y[1] - x[1])
+    .slice(0, 3);
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <Panel icon="🥛" title="A litre of milk" subtitle="What each litre you sell brings in, and where it goes">
+        <p className="text-sm text-stone-700">
+          For every litre you sell, you get about <strong>{cents(litre.revenue)}</strong>.{" "}
+          {litre.operating_surplus >= 0 ? (
+            <>
+              About <strong>{cents(litre.costs)}</strong> pays the farm’s costs, and <strong>{cents(litre.operating_surplus)}</strong> is yours to keep.
+            </>
+          ) : (
+            <>
+              But it costs about <strong>{cents(litre.costs)}</strong> to produce.
+            </>
+          )}
+        </p>
+        <SplitBar total={litre.revenue} costs={litre.costs} left={litre.operating_surplus} show={cents} />
+        {biggest.length > 0 && (
+          <p className="mt-2 text-xs text-stone-500">
+            Biggest costs per litre: {biggest.map(([line, v]) => `${labelForCost(line)} ${cents(v)}`).join(" · ")}
+          </p>
+        )}
+      </Panel>
+      <Panel icon="🐄" title="A cow" subtitle={`Your farm’s totals shared out over your ${r.milking_cows} milking cows`}>
+        <p className="text-sm text-stone-700">
+          So far this year, each cow brought in about <strong>{money(cow.revenue)}</strong>.{" "}
+          {cow.operating_surplus >= 0 ? (
+            <>
+              <strong>{money(cow.costs)}</strong> paid the farm’s costs, and <strong>{money(cow.operating_surplus)}</strong> is yours.
+            </>
+          ) : (
+            <>
+              But each cow cost about <strong>{money(cow.costs)}</strong>.
+            </>
+          )}
+        </p>
+        <SplitBar total={cow.revenue} costs={cow.costs} left={cow.operating_surplus} show={money} />
+        <p className="mt-2 text-xs text-stone-500">
+          Each cow gave {litres(cow.milk_litres)} of milk
+          {r.debt ? ` · you owe ${money(r.debt.per_cow)} in loans for each cow (${money(r.debt.balance)} in total)` : ""}
+        </p>
+      </Panel>
     </div>
   );
 }
 
 /** Dairy key figures from kpi.summary (actual months only), in plain words. Dairy-specific: shown for enterprise "dairy". */
-export default function KpiCard({ response, params, describePath, milkBenchmarks }) {
+export default function KpiCard({ response, params, describePath, milkBenchmarks, milkLatest, milkYear }) {
   return (
     <Card
       title="Key figures"
-      subtitle={response.status === "ok" ? `Per litre of milk and per cow, ${monthLabel(response.result.from.month)}–${monthLabel(response.result.to.month)}` : null}
+      subtitle={response.status === "ok" ? `What a litre of milk and a cow bring in, ${monthLabel(response.result.from.month)}–${monthLabel(response.result.to.month)}` : null}
       badge={<Badge>kpi.summary</Badge>}
     >
       <EngineGate response={response} params={params} describePath={describePath}>
         {(r) => (
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
-            <Stat label="It costs you, per litre" value={cents(r.per_litre_c.costs)} hint="to produce a litre of milk" />
-            <Stat label="You earn, per litre" value={cents(r.per_litre_c.revenue)} hint="milk, schemes and other income" />
-            <Stat label="Left over, per litre" value={cents(r.per_litre_c.operating_surplus)} hint="earned minus cost" />
-            <Stat label="Left over, per cow" value={formatCurrency(r.per_cow.operating_surplus, r.currency)} hint={`${r.milking_cows} cows`} />
-            <Stat label="Milk per cow" value={litres(r.per_cow.milk_litres)} hint="so far this year" />
-            <Stat label="Loans, per cow" value={r.debt ? formatCurrency(r.debt.per_cow, r.currency) : "—"} hint={r.debt ? `${formatCurrency(r.debt.balance, r.currency)} in total` : null} />
-          </div>
+          <KeyFigures r={r} />
         )}
       </EngineGate>
-      <MilkQuality benchmarks={milkBenchmarks} />
+      <MilkQuality benchmarks={milkBenchmarks} latest={milkLatest} year={milkYear} />
     </Card>
   );
 }

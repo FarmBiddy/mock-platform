@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Badge, Card } from "@/components/ui";
 import { Stat } from "@/components/financials/PlatformCards";
+import NextYearTable from "@/components/plan/NextYearTable";
 import PlanCharts from "@/components/plan/PlanCharts";
 import { planProjection } from "@/lib/financial-engine/client";
 import { loadFarm, readEdits } from "@/lib/farm-edits";
@@ -68,12 +69,18 @@ export default async function PlanPage({ searchParams }) {
         )
       : { status: "error", error: { message: "This year's cash flow couldn't be calculated, so there's no starting balance." } };
   const plan = response.status === "ok" ? response.result : null;
+  // €PM-style year ahead: year 1 with nothing changed (= the last 12 months) and with the milk price only.
+  const yearOne = (a) => planProjection(buildPlanInput(farm, inputs, cf.result, { assumptions: a, years: 1, investments: [] }));
+  const [unchanged, priceOnly] = plan
+    ? await Promise.all([yearOne({}), yearOne(assumptions.milk_price ? { milk_price: assumptions.milk_price } : {})])
+    : [];
   const last = plan?.years.at(-1);
   const lowest = (pick) => plan?.years.reduce((a, b) => (pick(b) != null && (pick(a) == null || pick(b) < pick(a)) ? b : a));
   const lowDscr = lowest((y) => y.debt.dscr);
   const lowCash = lowest((y) => y.cash.closing);
   // Same view for the advisor: the plan URL with this scenario, and engine figures as a one-line summary.
   const carriedParams = [["feed", carried.feed], ["fert", carried.fertiliser], ["herd", carried.herd]].filter(([, v]) => v != null);
+  const herdCarried = carriedParams.filter(([k]) => k === "herd");
   const query = new URLSearchParams([["s", presetKey], ...(price == null ? [] : [["price", price]]), ...(inflation == null ? [] : [["infl", inflation]]), ...(rates == null ? [] : [["rates", rates]]), ...carriedParams, ...investments.map((i) => ["inv", i.id])]);
   const share =
     plan &&
@@ -95,22 +102,22 @@ export default async function PlanPage({ searchParams }) {
 
       <ProLock pro={pro} title="Plan the next five years" value="See where cash, debt cover and net worth go under cautious, base or optimistic prices — and what a new parlour would do.">
         <div className="space-y-6">
-          {carriedParams.length > 0 && (
+          {herdCarried.length > 0 && (
             <p className="flex flex-wrap items-center gap-2 rounded-xl bg-sky-50 px-4 py-2 text-sm text-sky-900 ring-1 ring-sky-200">
               From the What-if, lasting from year 1:{" "}
-              {carriedParams.map(([k, v]) => (
+              {herdCarried.map(([k, v]) => (
                 <span key={k} className="rounded-full bg-white px-2 py-0.5 text-xs ring-1 ring-sky-200">
                   {{ feed: "Feed", fert: "Fertiliser", herd: "Herd" }[k]} {v > 0 ? "+" : ""}
                   {v}%
                 </span>
               ))}
-              <Link href={`/plan?${new URLSearchParams(query.entries().filter(([k]) => !["feed", "fert", "herd"].includes(k)))}`} className="text-xs underline">
+              <Link href={`/plan?${new URLSearchParams(query.entries().filter(([k]) => k !== "herd"))}`} className="text-xs underline">
                 Remove
               </Link>
             </p>
           )}
           <form className="grid gap-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-stone-200/70 lg:grid-cols-[2fr_1fr_1fr]">
-            {carriedParams.map(([k, v]) => (
+            {herdCarried.map(([k, v]) => (
               <input key={k} type="hidden" name={k} value={v} />
             ))}
             <fieldset>
@@ -139,6 +146,17 @@ export default async function PlanPage({ searchParams }) {
                 Cost inflation <span className="text-xs text-stone-400">% a year, blank = scenario</span>
                 <input name="infl" type="number" step="0.5" min="-5" max="15" defaultValue={inflation ?? ""} className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2" />
               </label>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  ["feed", "Feed next year", carried.feed],
+                  ["fert", "Fertiliser next year", carried.fertiliser],
+                ].map(([name, label, value]) => (
+                  <label key={name} className="block">
+                    {label} <span className="text-xs text-stone-400">± %</span>
+                    <input name={name} type="number" step="1" min="-50" max="200" defaultValue={value ?? ""} className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2" />
+                  </label>
+                ))}
+              </div>
               <label className="block">
                 Variable interest rates <span className="text-xs text-stone-400">± points vs today, blank = scenario</span>
                 <input name="rates" type="number" step="0.25" min="-3" max="10" defaultValue={rates ?? ""} className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2" />
@@ -207,6 +225,10 @@ export default async function PlanPage({ searchParams }) {
                   <span>Big decision? Get a second opinion before you commit.</span>
                   <span className="shrink-0 font-medium">Share with my advisor →</span>
                 </Link>
+              )}
+
+              {unchanged?.status === "ok" && priceOnly?.status === "ok" && (
+                <NextYearTable base={unchanged.result.years[0]} priceOnly={priceOnly.result.years[0]} plan={plan.years[0]} />
               )}
 
               <Card title="Cash and net worth" subtitle="At the end of each plan year" badge={<Badge>plan.projection</Badge>}>

@@ -30,7 +30,7 @@ export function Rows({ rows }) {
         {rows.filter(Boolean).map(([label, value, o = {}], i) => (
           <tr key={i} className={o.strong ? "border-t border-stone-200 font-semibold" : "text-stone-700"}>
             <td className={`py-1 ${o.indent ? "pl-4 text-stone-500" : ""}`}>{label}</td>
-            <td className={`py-1 text-right ${!o.raw && value < 0 ? "text-red-700" : ""}`}>{o.raw ? value : eur(value)}</td>
+            <td className={`py-1 pl-3 text-right whitespace-nowrap ${!o.raw && value < 0 ? "text-red-700" : ""}`}>{o.raw ? value : eur(value)}</td>
           </tr>
         ))}
       </tbody>
@@ -54,6 +54,98 @@ export function Headline({ items }) {
         </div>
       ))}
     </div>
+  );
+}
+
+/** The report in plain words, before any table: what the farmer would say across the desk. */
+function InShort({ children }) {
+  return (
+    <section className="break-inside-avoid rounded-2xl bg-emerald-50/60 p-5 ring-1 ring-emerald-200 print:rounded-none print:bg-white print:p-0 print:ring-0">
+      <h2 className="text-base font-semibold">In short</h2>
+      <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-stone-800">{children}</ul>
+    </section>
+  );
+}
+const B = ({ children }) => <strong className="font-semibold tabular-nums">{children}</strong>;
+const times = (v, d = 1) => `${num(v, d)} times`;
+/** €X more / €X less: a change in words, sign as a word. */
+const moreLess = (v) => `${eur(Math.abs(v))} ${v < 0 ? "less" : "more"}`;
+
+/** Bank: profit, how well loans are covered, what the farm owns vs owes, and room for a new loan. Engine figures only. */
+export function BankInShort({ rep, capacity, minCover }) {
+  const p = rep.profit;
+  const bs = rep.balance_sheet;
+  const loan = capacity?.new_loan;
+  return (
+    <InShort>
+      <li>
+        In {period(p)}, the farm took in <B>{eur(p.revenue)}</B> and made <B>{eur(p.net_profit_before_tax)}</B> before tax, a{" "}
+        {pct(p.net_margin_pct)} margin.
+      </li>
+      {rep.kpis.dscr != null && (
+        <li>
+          What the farm makes covers its loan repayments <B>{times(rep.kpis.dscr)}</B> over
+          {minCover ? `; lenders usually want at least ${times(minCover, 2)}` : ""}.
+        </li>
+      )}
+      <li>
+        It owes <B>{eur(bs.liabilities.total)}</B> (loans and bills) and has <B>{eur(bs.assets.total)}</B> in land, buildings, stock,
+        machinery and cash, so <B>{pct(bs.ratios.equity_pct)}</B> of the farm is its own.
+      </li>
+      {loan && (
+        <li>
+          After family drawings and tax, it could repay a new loan of up to about <B>{eur(loan.max_principal)}</B> ({num(loan.annual_rate * 100, 2)}%
+          over {num(loan.term_months / 12, 1)} years, about {eur(loan.monthly_payment_at_max)} a month), based on {period(capacity)} including the
+          forecast.
+        </li>
+      )}
+    </InShort>
+  );
+}
+
+/** Advisor: a litre in and out, costs vs the Irish average, this year vs last, and how far the milk price can fall. */
+export function AdvisorInShort({ rep, bench }) {
+  const k = rep.kpis;
+  const l = k.per_litre_c;
+  const c = rep.comparison;
+  const total = vsAverage(l.costs, bench.total_c);
+  // the groups furthest above the average, the ones worth a conversation
+  const above = costGroups(k, c, bench)
+    .filter((g) => g.avg != null && g.cl - g.avg > g.avg * 0.1)
+    .sort((a, b) => b.cl - b.avg - (a.cl - a.avg))
+    .slice(0, 2);
+  const base = rep.sensitivity.scenarios.find((sc) => sc.name === "base");
+  const from = rep.sensitivity.shocks_from ? `${monthLabel(rep.sensitivity.shocks_from.month)}` : null;
+  return (
+    <InShort>
+      <li>
+        In {period(k)}, for every litre sold the farm got <B>{num(l.revenue)}c</B> and spent <B>{num(l.costs)}c</B>, leaving{" "}
+        <B>{num(l.operating_surplus)}c</B>, or {eur(k.per_cow.operating_surplus)} a cow.
+      </li>
+      <li>
+        Costs are <B>{total.text === "about the same" ? "about the same as" : `${total.text} than`}</B> the average Irish dairy farm ({num(bench.total_c)}c
+        a litre)
+        {above.length > 0 && `, mostly ${above.map((g) => `${g.label.toLowerCase()}, ${g.cmp.text}`).join(", and ")}`}.
+      </li>
+      {c && (
+        <li>
+          Against the same months of {c.comparison.from.year}, the operating surplus is{" "}
+          <B>
+            {c.profit.net.change < 0 ? "down" : "up"} {eur(Math.abs(c.profit.net.change))}
+          </B>
+          {c.profit.net.change_pct == null ? "" : ` (${c.profit.net.change_pct > 0 ? "+" : ""}${pct(c.profit.net.change_pct)})`}: milk brought{" "}
+          {moreLess(c.milk.volume_effect)} from the litres sold and {moreLess(c.milk.price_effect)} from the price.
+        </li>
+      )}
+      {base && from && (
+        <li>
+          {base.break_even.surplus_milk_price_c === 0
+            ? `Even if milk paid nothing from ${from}, the year would still end in profit.`
+            : base.break_even.surplus_milk_price_c != null &&
+              `The year stays in profit unless milk falls below ${num(base.break_even.surplus_milk_price_c)}c a litre from ${from}.`}
+        </li>
+      )}
+    </InShort>
   );
 }
 
@@ -193,6 +285,116 @@ export function Kpis({ k }) {
   );
 }
 
+const vsAverage = (cl, avg) => {
+  if (avg == null) return null;
+  const diff = cl - avg;
+  // ponytail: ±10% of the average counts as "about the same"; engine compare (like milk.quality) if this needs to be exact
+  if (Math.abs(diff) <= avg * 0.1) return { text: "about the same", tone: "text-stone-500", bar: "bg-stone-400" };
+  return diff > 0
+    ? { text: `${diff.toFixed(1)}c higher`, tone: "text-amber-700", bar: "bg-amber-500" }
+    : { text: `${(-diff).toFixed(1)}c lower`, tone: "text-emerald-700", bar: "bg-emerald-600" };
+};
+
+/**
+ * Costs per litre next to the Irish average, the €PM way. Lines are grouped as the Teagasc NFS reports them
+ * (`bench.groups` names our cost lines per group); the group figures are sums of the engine's per-line c/L and €.
+ * € comes from pl.compare (same period); without a prior year there is no compare, so the € column is left out.
+ */
+/** The farm's cost lines in the NFS groups, biggest c/L first: { label, keys, cl, eur, avg, cmp }. */
+export function costGroups(k, c, bench) {
+  const perLine = k.per_litre_c.cost_lines;
+  const euro = (key) => c?.costs.lines[key]?.actual ?? 0;
+  const mapped = new Set(bench.groups.flatMap((g) => g.lines));
+  const unmapped = Object.keys(perLine).filter((key) => perLine[key] && !mapped.has(key));
+  return [
+    ...bench.groups.map((g) => ({ label: g.label, keys: g.lines, avg: g.average_c })),
+    ...unmapped.map((key) => ({ label: labelForCost(key), keys: [key], avg: null })),
+  ]
+    .map((g) => {
+      const keys = g.keys.filter((key) => perLine[key]);
+      const cl = keys.reduce((s, key) => s + perLine[key], 0);
+      return { ...g, keys, cl, eur: keys.reduce((s, key) => s + euro(key), 0), cmp: vsAverage(cl, g.avg) };
+    })
+    .filter((g) => g.cl || g.avg != null)
+    .sort((a, b) => b.cl - a.cl);
+}
+
+export function CostBreakdown({ k, c, bench }) {
+  const perLine = k.per_litre_c.cost_lines;
+  const euro = (key) => c?.costs.lines[key]?.actual ?? 0;
+  const groups = costGroups(k, c, bench);
+  const max = Math.max(...groups.map((g) => Math.max(g.cl, g.avg ?? 0)));
+  const total = vsAverage(k.per_litre_c.costs, bench.total_c);
+  const cells = (cl, eurValue, avg, cmp, strong) => (
+    <>
+      {c && <td className="py-1 text-right">{eur(eurValue)}</td>}
+      <td className="py-1 text-right">{cl.toFixed(1)}</td>
+      <td className="py-1 text-right text-stone-500">{avg == null ? "—" : avg.toFixed(1)}</td>
+      <td className={`py-1 pl-3 text-right whitespace-nowrap ${cmp?.tone ?? ""} ${strong ? "" : "font-medium"}`}>{cmp?.text ?? ""}</td>
+    </>
+  );
+  return (
+    <Section
+      title="Where the costs go"
+      note={`${period(k)} · cent per litre of milk sold, next to the average Irish dairy farm (${bench.year})`}
+    >
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[36rem] text-sm tabular-nums">
+          <thead className="text-left text-xs text-stone-500">
+            <tr>
+              <th className="py-1 font-medium">Cost</th>
+              {c && <th className="py-1 text-right font-medium">€ total</th>}
+              <th className="py-1 pl-3 text-right font-medium">Your c/L</th>
+              <th className="py-1 pl-3 text-right font-medium">Irish avg</th>
+              <th className="py-1 pl-3 text-right font-medium">You vs average</th>
+              <th className="w-1/4 py-1 pl-4 font-medium" />
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map((g) => {
+              const { cmp } = g;
+              return [
+                <tr key={g.label} className="border-t border-stone-100 text-stone-800">
+                  <td className="py-1 font-medium">{g.label}</td>
+                  {cells(g.cl, g.eur, g.avg, cmp)}
+                  <td className="py-1 pl-4">
+                    <div className="relative h-2">
+                      <div className={`h-2 rounded-full ${cmp?.bar ?? "bg-stone-400"}`} style={{ width: `${(g.cl / max) * 100}%` }} />
+                      {g.avg != null && (
+                        <div className="absolute -top-1 h-4 w-0.5 bg-stone-800" style={{ left: `${(g.avg / max) * 100}%` }} title={`Irish average ${g.avg.toFixed(1)}c`} />
+                      )}
+                    </div>
+                  </td>
+                </tr>,
+                ...(g.keys.length > 1
+                  ? g.keys.map((key) => (
+                      <tr key={key} className="text-xs text-stone-500">
+                        <td className="py-0.5 pl-4">{labelForCost(key)}</td>
+                        {c && <td className="py-0.5 text-right">{eur(euro(key))}</td>}
+                        <td className="py-0.5 text-right">{perLine[key].toFixed(1)}</td>
+                        <td colSpan={3} />
+                      </tr>
+                    ))
+                  : []),
+              ];
+            })}
+            <tr className="border-t border-stone-300 font-semibold">
+              <td className="py-1">Total costs</td>
+              {cells(k.per_litre_c.costs, c?.costs.total.actual, bench.total_c, total, true)}
+              <td />
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-xs text-stone-500">
+        The black mark on each bar is the Irish average. Within 10% of it counts as about the same. Average: {bench.source}. Its total
+        leaves out depreciation, as ours does. It counts paid labour only: the survey doesn’t cost family labour, so a farm that pays
+        its labour will look higher.
+      </p>
+    </Section>
+  );
+}
+
 /** Bank cash: actual period and the projection rolled on from its close. */
 export function Cash({ cash }) {
   const { actual: a, projection: p } = cash;
@@ -258,6 +460,9 @@ export function Comparison({ c }) {
   );
 }
 
+/** Engine floors break-even at 0 (covered even at a zero price); null = milk price doesn't move it. */
+const breakEven = (c) => (c == null ? "—" : c === 0 ? "any price" : num(c, 1, "c"));
+
 /** risk.sensitivity scenarios. */
 export function Sensitivity({ s }) {
   const from = s.shocks_from ? `${monthLabel(s.shocks_from.month)} ${s.shocks_from.year}` : null;
@@ -272,7 +477,7 @@ export function Sensitivity({ s }) {
               <th className="py-1 text-right font-medium">Closing cash</th>
               <th className="py-1 text-right font-medium">Lowest cash</th>
               <th className="py-1 text-right font-medium">Loan cover, full year</th>
-              <th className="py-1 text-right font-medium">Break-even (loss / overdraft)</th>
+              <th className="py-1 text-right font-medium">Lowest milk price before a loss / overdraft</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
@@ -286,14 +491,17 @@ export function Sensitivity({ s }) {
                 </td>
                 <td className="py-1 text-right">{num(sc.dscr, 2, "×")}</td>
                 <td className="py-1 text-right">
-                  {num(sc.break_even.surplus_milk_price_c, 1, "c")} / {num(sc.break_even.cash_milk_price_c, 1, "c")}
+                  {breakEven(sc.break_even.surplus_milk_price_c)} / {breakEven(sc.break_even.cash_milk_price_c)}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-xs text-stone-500">Average milk price used: {num(s.milk_price_c, 1, "c/L")}.</p>
+      <p className="mt-2 text-xs text-stone-500">
+        Average milk price used: {num(s.milk_price_c, 1, "c/L")}. The lowest price applies to the months still to come
+        {from ? ` (from ${from})` : ""}; “any price” means the farm stays covered even if milk paid nothing.
+      </p>
     </Section>
   );
 }
