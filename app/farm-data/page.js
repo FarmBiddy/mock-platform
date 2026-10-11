@@ -1,16 +1,17 @@
 import Link from "next/link";
 import { Card } from "@/components/ui";
-import { loadFarm, ownerOf, readEdits } from "@/lib/farm-edits";
+import AutoSaveForm from "@/components/AutoSaveForm";
+import { loadFarm, ownerOf, readEdits, yearValue } from "@/lib/farm-edits";
 import { ADVISOR, getViewer } from "@/lib/session";
 import { forecastMilkPrice } from "@/lib/financials/farm";
 import { monthLabel } from "@/lib/format/date";
-import { resetFarmData, saveFarmData } from "./actions";
+import { autosaveFarmData, resetFarmData } from "./actions";
 
 export const metadata = { title: "Farm data · FarmBiddy" };
 
 const MONTH_FIELDS = [
   ["pl.milk_litres", "Milk supplied", "litres", "1"],
-  ["pl.milk_price", "Milk price paid", "€/litre", "0.001"],
+  ["pl.milk_price", "Milk price paid", "€/litre", "0.0001"],
   ["cash.milk", "Milk cheque received", "€", "1"],
   ["lines.feed", "Feed", "€", "1"],
   ["lines.fertiliser", "Fertiliser", "€", "1"],
@@ -19,6 +20,9 @@ const MONTH_FIELDS = [
   ["lines.labour", "Labour", "€", "1"],
   ["lines.cattle_sales", "Cattle sales", "€", "1"],
 ];
+
+const pill = (on) =>
+  `rounded-full px-3 py-1 text-sm ring-1 ${on ? "bg-emerald-800 text-white ring-emerald-800" : "bg-white text-stone-700 ring-stone-300 hover:bg-stone-50"}`;
 
 /** `locked`: why this role can't change the field (the other role owns it); shown instead of the hint. */
 function Field({ name, label, unit, step = "1", value, edited, hint, optional, min = "0", locked }) {
@@ -36,7 +40,7 @@ function Field({ name, label, unit, step = "1", value, edited, hint, optional, m
         required={!optional}
         disabled={!!locked}
         defaultValue={value ?? ""}
-        className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 tabular-nums disabled:bg-stone-100 disabled:text-stone-500"
+        className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 tabular-nums invalid:border-red-400 disabled:bg-stone-100 disabled:text-stone-500"
       />
       {(locked || hint) && <span className="mt-0.5 block text-xs text-stone-500">{locked ? `🔒 ${locked}` : hint}</span>}
     </label>
@@ -48,7 +52,8 @@ function Field({ name, label, unit, step = "1", value, edited, hint, optional, m
  * every page re-runs the engine with the new numbers.
  */
 export default async function FarmDataPage({ searchParams }) {
-  const { m, saved, reset } = await searchParams;
+  const { m, v, saved, reset } = await searchParams;
+  const byMonth = v === "months";
   const farm = await loadFarm();
   const edits = await readEdits(farm.profile.id);
   const { role } = await getViewer();
@@ -92,8 +97,8 @@ export default async function FarmDataPage({ searchParams }) {
         </p>
       )}
 
-      {/* key: remount after save/reset so the uncontrolled inputs show the stored values, not what was typed */}
-      <form key={`${month}:${JSON.stringify(edits)}`} action={saveFarmData} className="space-y-6">
+      {/* key: remount on a new view, month or reset so the uncontrolled inputs show the stored values */}
+      <AutoSaveForm key={`${byMonth ? month : "year"}:${reset ?? ""}`} action={autosaveFarmData} className="space-y-6">
         <input type="hidden" name="_month" value={month} />
 
         <Card title="Farm" subtitle="Leave a field empty if you don’t know it: Biddy will ask for it.">
@@ -127,35 +132,71 @@ export default async function FarmDataPage({ searchParams }) {
           </div>
         </Card>
 
-        <Card title="Monthly records" subtitle="What actually happened each month (from co-op statements, bank and invoices).">
-          <nav aria-label="Month" className="mb-4 flex flex-wrap gap-1.5">
-            {actualMonths.map((x) => (
-              <Link
-                key={x}
-                href={`/farm-data?m=${x}`}
-                aria-current={x === month ? "page" : undefined}
-                className={`rounded-full px-3 py-1 text-sm ring-1 ${x === month ? "bg-emerald-800 text-white ring-emerald-800" : "bg-white text-stone-700 ring-stone-300 hover:bg-stone-50"}`}
-              >
-                {monthLabel(x)}
-                {Object.keys(edits).some((p) => p.startsWith(`months.${x}.`)) ? " •" : ""}
+        <Card
+          title="Your year so far"
+          subtitle={`${monthLabel(1)}–${monthLabel(farm.actual_through_month)} ${farm.year}: what actually happened, from co-op statements, bank and invoices.`}
+        >
+          <nav aria-label="View" className="mb-4 flex flex-wrap gap-1.5">
+            {[
+              ["Year totals", "/farm-data", !byMonth],
+              ["Month by month", `/farm-data?v=months&m=${month}`, byMonth],
+            ].map(([label, href, on]) => (
+              <Link key={label} href={href} aria-current={on ? "page" : undefined} className={pill(on)}>
+                {label}
               </Link>
             ))}
           </nav>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {MONTH_FIELDS.map(([path, label, unit, step]) => (
-              <Field
-                key={path}
-                name={`months.${month}.${path}`}
-                label={label}
-                unit={unit}
-                step={step}
-                value={valueOf(path) ?? 0}
-                edited={`months.${month}.${path}` in edits}
-                locked={lock(`months.${month}.${path}`)}
-              />
-            ))}
-          </div>
-          <p className="mt-3 text-xs text-stone-500">Save before switching month. Costs here are paid in the same month; the milk cheque is what the co-op paid in.</p>
+          {byMonth ? (
+            <>
+              <nav aria-label="Month" className="mb-4 flex flex-wrap gap-1.5">
+                {actualMonths.map((x) => (
+                  <Link key={x} href={`/farm-data?v=months&m=${x}`} aria-current={x === month ? "page" : undefined} className={pill(x === month)}>
+                    {monthLabel(x)}
+                    {Object.keys(edits).some((p) => p.startsWith(`months.${x}.`)) ? " •" : ""}
+                  </Link>
+                ))}
+              </nav>
+              <div className="grid gap-4 sm:grid-cols-3">
+                {MONTH_FIELDS.map(([path, label, unit, step]) => (
+                  <Field
+                    key={path}
+                    name={`months.${month}.${path}`}
+                    label={label}
+                    unit={unit}
+                    step={step}
+                    value={valueOf(path) == null ? 0 : +valueOf(path).toFixed(step === "1" ? 0 : 4)}
+                    edited={`months.${month}.${path}` in edits || `months_scale.${path}` in edits}
+                    locked={lock(`months.${month}.${path}`)}
+                  />
+                ))}
+              </div>
+              <p className="mt-3 text-xs text-stone-500">
+                A month you change here stays as you typed it, even if you change the year total later. Costs are paid in the same month; the
+                milk cheque is what the co-op paid in.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="grid gap-4 sm:grid-cols-3">
+                {MONTH_FIELDS.map(([path, label, unit, step]) => (
+                  <Field
+                    key={path}
+                    name={`year.${path}`}
+                    label={path === "pl.milk_price" ? "Average milk price paid" : label}
+                    unit={unit}
+                    step={step === "1" ? "1" : "0.0001"}
+                    value={+yearValue(farm, path).toFixed(step === "1" ? 0 : 4)}
+                    edited={`months_scale.${path}` in edits || Object.keys(edits).some((p) => p.startsWith("months.") && p.endsWith(`.${path}`))}
+                    locked={lock(`months_scale.${path}`)}
+                  />
+                ))}
+              </div>
+              <p className="mt-3 text-xs text-stone-500">
+                One figure for the year is enough. Change a total and we spread it over the months the way your figures already run (more feed
+                in winter, more fertiliser in spring). Know a month exactly? Use Month by month.
+              </p>
+            </>
+          )}
         </Card>
 
         <Card title="A new loan" subtitle="Terms used for “How much more could I borrow?”">
@@ -183,10 +224,7 @@ export default async function FarmDataPage({ searchParams }) {
           </div>
         </Card>
 
-        <div className="sticky bottom-20 flex justify-end lg:bottom-4">
-          <button className="rounded-xl bg-emerald-800 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-emerald-900">Save and recalculate</button>
-        </div>
-      </form>
+      </AutoSaveForm>
     </div>
   );
 }
