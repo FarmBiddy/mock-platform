@@ -1,0 +1,180 @@
+{
+  "profile": {
+    "id": "sean-doyle",
+    "name": "Seán Doyle",
+    "initials": "SD",
+    "farm_name": "Doyle Farm",
+    "county": "Co. Waterford",
+    "enterprise": "dairy",
+    "starter": true
+  },
+  "_note": "New-farmer demo: just signed up, nothing entered yet. Only the name and farm are known; every figure comes from the farmer on Farm data. The forecast settings and plan presets are platform defaults (market and lender terms), not the farm's figures.",
+  "year": 2026,
+  "actual_through_month": 9,
+  "opening_cash": null,
+  "milking_cows": null,
+  "hectares": null,
+  "household": {},
+  "new_loan_terms": {
+    "annual_rate": 0.055,
+    "term_months": 84,
+    "min_cover": 1.25
+  },
+  "plan_presets": {
+    "_note": "Advisor / market presets for plan.projection (the engine holds no market opinions). Lists are per year, index 0 = year 1; prices and amounts carry forward.",
+    "cautious": {
+      "label": "Cautious",
+      "note": "Milk at 42c for two years, then 44c; costs +3% a year; variable rates +1 pp",
+      "assumptions": {
+        "milk_price": [
+          0.42,
+          0.42,
+          0.44
+        ],
+        "cost_inflation_pct": [
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        "interest_rate_shift_pp": [
+          1
+        ],
+        "drawings": [
+          30000
+        ],
+        "tax": [
+          10000
+        ]
+      }
+    },
+    "base": {
+      "label": "Base",
+      "note": "Milk at 47c; costs +2% a year",
+      "assumptions": {
+        "milk_price": [
+          0.47
+        ],
+        "cost_inflation_pct": [
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "drawings": [
+          30000
+        ],
+        "tax": [
+          12000
+        ]
+      }
+    },
+    "optimistic": {
+      "label": "Optimistic",
+      "note": "Milk at 50c; costs +2% a year; yield +1% a year",
+      "assumptions": {
+        "milk_price": [
+          0.5
+        ],
+        "cost_inflation_pct": [
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "yield_pct": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "drawings": [
+          30000
+        ],
+        "tax": [
+          14000
+        ]
+      }
+    }
+  },
+  "plan_investments": [],
+  "household_paid_to_date": {},
+  "balance_sheet": {},
+  "assets": [],
+  "months": [
+    {
+      "month": 1,
+      "pl": {},
+      "cash": {},
+      "lines": {}
+    },
+    {
+      "month": 2,
+      "pl": {},
+      "cash": {},
+      "lines": {}
+    },
+    {
+      "month": 3,
+      "pl": {},
+      "cash": {},
+      "lines": {}
+    },
+    {
+      "month": 4,
+      "pl": {},
+      "cash": {},
+      "lines": {}
+    },
+    {
+      "month": 5,
+      "pl": {},
+      "cash": {},
+      "lines": {}
+    },
+    {
+      "month": 6,
+      "pl": {},
+      "cash": {},
+      "lines": {}
+    },
+    {
+      "month": 7,
+      "pl": {},
+      "cash": {},
+      "lines": {}
+    },
+    {
+      "month": 8,
+      "pl": {},
+      "cash": {},
+      "lines": {}
+    },
+    {
+      "month": 9,
+      "pl": {},
+      "cash": {},
+      "lines": {}
+    }
+  ],
+  "prior_year": [],
+  "loans": [],
+  "suppliers": {
+    "currency": "EUR",
+    "total_outstanding": 0,
+    "overdue": 0,
+    "suppliers": []
+  },
+  "events": {
+    "currency": "EUR",
+    "year": 2026,
+    "month": 10,
+    "total_in": 0,
+    "total_out": 0,
+    "events": []
+  }
+}

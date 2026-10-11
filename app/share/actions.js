@@ -3,17 +3,18 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { MAX_SHARES, SHARED_COOKIE, cleanShare, readShares } from "@/lib/shared";
-import { ADVISOR, CLIENT_COOKIE, OWNER_FARM, getViewer } from "@/lib/session";
+import { ADVISOR, CLIENT_COOKIE, getViewer } from "@/lib/session";
 
 const OPTS = { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 30 };
 const save = async (shares) => (await cookies()).set(SHARED_COOKIE, JSON.stringify(shares), OPTS);
 
 /** The owner sends a prepared view of the farm to their advisor (after confirming on /share). */
 export async function shareWithAdvisor(formData) {
-  if ((await getViewer()).role !== "owner") redirect("/portfolio");
+  const { role, farmId } = await getViewer();
+  if (role !== "owner") redirect("/portfolio");
   const share = cleanShare({
     id: crypto.randomUUID().slice(0, 8),
-    farm: OWNER_FARM,
+    farm: farmId,
     title: formData.get("title"),
     summary: formData.get("summary"),
     note: formData.get("note"),

@@ -90,4 +90,26 @@ assert.equal(scaleForTarget({ months: [{ month: 1, lines: {} }] }, {}, "lines.fe
 assert.deepEqual(cleanEdits({ "months_scale.lines.feed": 2, "months_scale.lines.water": 2, "months_scale.cash.milk": 11 }), { "months_scale.lines.feed": 2 });
 assert.equal(ownerOf("months_scale.lines.feed"), "owner");
 
+// every Farm data field is editable; unknown lines still aren't
+assert.deepEqual(
+  cleanEdits({ "months.3.lines.insurance": 100, "months_scale.cash.household_drawings": 1.2, "months_scale.lines.biss": 2, "months.3.lines.water": 5 }),
+  { "months.3.lines.insurance": 100, "months_scale.cash.household_drawings": 1.2, "months_scale.lines.biss": 2 },
+);
+// the milk cheque follows litres × price totals, unless the farmer gave their own cheques
+const cheque = { months: [{ month: 1, pl: { milk_litres: 100, milk_price: 0.5 }, cash: { milk: 40 }, lines: {} }] };
+assert.equal(applyEdits(cheque, { "months_scale.pl.milk_litres": 2, "months_scale.pl.milk_price": 1.1 }).months[0].cash.milk, 88);
+assert.equal(applyEdits(cheque, { "months_scale.pl.milk_litres": 2, "months_scale.cash.milk": 1.5 }).months[0].cash.milk, 60);
+assert.equal(applyEdits(cheque, { "months_scale.pl.milk_litres": 2, "months.1.cash.milk": 55 }).months[0].cash.milk, 55);
+
+// a new farmer: no months of their own, so a year total is kept as a total and spread in the typical pattern
+const empty = { months: [1, 2, 3].map((month) => ({ month, pl: {}, cash: {}, lines: {} })) };
+assert.equal(scaleForTarget(empty, {}, "lines.feed", 900), null, "nothing to scale");
+const spread = applyEdits(empty, { "months_total.lines.feed": 900, "months.2.lines.feed": 100 });
+assert.equal(spread.months[1].lines.feed, 100, "a month typed by hand stays");
+assert.ok(Math.abs(spread.months[0].lines.feed + spread.months[2].lines.feed - 800) < 1e-9, "the rest of the total goes to the other months");
+const milk = applyEdits(empty, { "months_total.pl.milk_litres": 30000, "months_total.pl.milk_price": 0.5 });
+assert.equal(yearValue(milk, "pl.milk_litres"), 30000);
+assert.equal(milk.months[1].cash.milk, milk.months[0].pl.milk_litres * 0.5, "cheque = last month's litres × price");
+assert.equal(milk.months[0].cash.milk, 0, "no December before January");
+
 console.log("farm edits ok");

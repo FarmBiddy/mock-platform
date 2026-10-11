@@ -1,4 +1,6 @@
 import Link from "next/link";
+import EmptyState from "@/components/EmptyState";
+import { hasRecords } from "@/lib/farm-fields";
 import { loadFarm } from "@/lib/farm-edits";
 import { runReport } from "@/lib/financial-engine/client";
 import { buildReportInput, runFarm } from "@/lib/financials/farm";
@@ -31,6 +33,7 @@ export default async function ReportsPage({ searchParams }) {
   const order = role === "advisor" ? ["advisor", "bank", "accountant"] : Object.keys(REPORTS);
   const kind = REPORTS[r] ? r : order[0];
   const farm = await loadFarm();
+  if (!hasRecords(farm)) return <EmptyState title="Reports" what="Reports for your bank, advisor and accountant." />;
   const locked = kind === "bank" && !pro; // the bank report is Pro
 
   const { inputs, cf, cap } = await runFarm(farm);

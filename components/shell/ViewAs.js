@@ -8,10 +8,11 @@ import { ADVISOR } from "@/lib/session";
  * For the advisor inside a client's workspace, a chip names the client and leads back to the portfolio.
  * The owner also gets the demo Free / Pro switch; the advisor's B2B plan includes everything.
  */
-export default function ViewAs({ role, owner, client, tier }) {
+export default function ViewAs({ role, owner, owners, client, tier }) {
   const me = role === "advisor" ? { initials: ADVISOR.initials, name: ADVISOR.name, sub: ADVISOR.org } : { initials: owner.initials, name: owner.name, sub: owner.farm_name };
+  const current = role === "advisor" ? "advisor" : owner.id;
   const option = (value, label, sub) => (
-    <button name="role" value={value} aria-current={role === value || undefined} className="block w-full rounded-lg px-3 py-2 text-left hover:bg-stone-100 aria-[current]:bg-emerald-50">
+    <button key={value} name="role" value={value} aria-current={current === value || undefined} className="block w-full rounded-lg px-3 py-2 text-left hover:bg-stone-100 aria-[current]:bg-emerald-50">
       <span className="block text-sm font-medium">{label}</span>
       <span className="block text-xs text-stone-500">{sub}</span>
     </button>
@@ -44,7 +45,7 @@ export default function ViewAs({ role, owner, client, tier }) {
         <div className="absolute right-0 z-30 mt-2 w-64 rounded-xl bg-white p-2 shadow-lg ring-1 ring-stone-200">
           <form action={viewAs}>
             <p className="px-3 pt-1 pb-2 text-[11px] font-semibold uppercase tracking-wider text-stone-400">View as (demo)</p>
-            {option("owner", `${owner.name} · farm owner`, owner.farm_name)}
+            {owners.map((o) => option(o.id, `${o.name} · farm owner`, o.starter ? `${o.farm_name} · new, just signed up` : `${o.farm_name} · a year of records`))}
             {option("advisor", `${ADVISOR.name} · advisor`, `${ADVISOR.org} · ${ADVISOR.clients.length} clients`)}
           </form>
           {role === "owner" && (

@@ -3,15 +3,17 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { NOTES_COOKIE, NOTE_MAX, readNotes } from "@/lib/notes";
-import { ADVISOR, CLIENT_COOKIE, ROLE_COOKIE, TIER_COOKIE, getViewer } from "@/lib/session";
+import { ADVISOR, CLIENT_COOKIE, OWNER_COOKIE, OWNER_FARMS, ROLE_COOKIE, TIER_COOKIE, getViewer } from "@/lib/session";
 
 const OPTS = { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 30 };
 
-/** Mock login switch: "View as" the farm owner or the advisor. */
+/** Mock login switch: "View as" one of the farm owners or the advisor (`role` = "advisor" or an owner farm id). */
 export async function viewAs(formData) {
   const jar = await cookies();
-  const role = formData.get("role") === "advisor" ? "advisor" : "owner";
+  const pick = formData.get("role");
+  const role = pick === "advisor" ? "advisor" : "owner";
   jar.set(ROLE_COOKIE, role, OPTS);
+  if (OWNER_FARMS.includes(pick)) jar.set(OWNER_COOKIE, pick, OPTS);
   jar.delete(CLIENT_COOKIE);
   redirect(role === "advisor" ? "/portfolio" : "/dashboard");
 }
