@@ -1,5 +1,21 @@
 {
   "_note": "Milk-quality reference figures the platform sends to the engine (milk.quality `benchmarks`). Fat and protein come live from the CSO, SCC live from ICBF weekly milk recording (lib/benchmarks.js); the *_fallback entries are the last known figures, used if a source is down or changes its page. `manual` is for measures with no automatic source yet. null = no public figure yet.",
+  "nfs_dairy_costs": {
+    "_note": "Average Irish dairy farm costs, cent per litre, typed in from Teagasc NFS Dairy Enterprise Factsheet 2024, Table 1 (published Oct 2025; 2025 factsheet not out yet, NFS 2025 preliminary gives only a ~36c total). `lines` are our engine cost lines in each NFS group. total_c = Total Costs 35.50 minus machinery (2.60) and buildings (1.62) depreciation, because our operating costs exclude depreciation. Update yearly when the new factsheet is published.",
+    "year": 2024,
+    "source": "Teagasc National Farm Survey 2024, Dairy Enterprise Factsheet (320 farms)",
+    "url": "https://teagasc.ie/wp-content/uploads/uploads/media/website/publications/2025/National-Farm-Survey-2024-Dairy.pdf",
+    "groups": [
+      { "label": "Feed", "lines": ["feed"], "average_c": 8.78 },
+      { "label": "Fertiliser & contractor", "lines": ["fertiliser", "contractor"], "average_c": 6.53 },
+      { "label": "Vet, levies & other direct", "lines": ["vet", "levies"], "average_c": 5.41 },
+      { "label": "Electricity & fuel", "lines": ["electricity", "fuel"], "average_c": 3.02 },
+      { "label": "Labour (paid)", "lines": ["labour"], "average_c": 1.03 },
+      { "label": "Land rent / lease", "lines": ["rent_lease"], "average_c": 1.53 },
+      { "label": "Repairs, insurance & overheads", "lines": ["repairs_maintenance", "insurance", "professional_fees", "water", "other_operating_costs"], "average_c": 4.98 }
+    ],
+    "total_c": 31.28
+  },
   "manual": {
     "tbc_k": null
   },

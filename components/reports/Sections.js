@@ -193,6 +193,108 @@ export function Kpis({ k }) {
   );
 }
 
+const vsAverage = (cl, avg) => {
+  if (avg == null) return null;
+  const diff = cl - avg;
+  // ponytail: ±10% of the average counts as "about the same"; engine compare (like milk.quality) if this needs to be exact
+  if (Math.abs(diff) <= avg * 0.1) return { text: "about the same", tone: "text-stone-500", bar: "bg-stone-400" };
+  return diff > 0
+    ? { text: `${diff.toFixed(1)}c higher`, tone: "text-amber-700", bar: "bg-amber-500" }
+    : { text: `${(-diff).toFixed(1)}c lower`, tone: "text-emerald-700", bar: "bg-emerald-600" };
+};
+
+/**
+ * Costs per litre next to the Irish average, the €PM way. Lines are grouped as the Teagasc NFS reports them
+ * (`bench.groups` names our cost lines per group); the group figures are sums of the engine's per-line c/L and €.
+ * € comes from pl.compare (same period); without a prior year there is no compare, so the € column is left out.
+ */
+export function CostBreakdown({ k, c, bench }) {
+  const perLine = k.per_litre_c.cost_lines;
+  const euro = (key) => c?.costs.lines[key]?.actual ?? 0;
+  const mapped = new Set(bench.groups.flatMap((g) => g.lines));
+  const unmapped = Object.keys(perLine).filter((key) => perLine[key] && !mapped.has(key));
+  const groups = [
+    ...bench.groups.map((g) => ({ label: g.label, keys: g.lines, avg: g.average_c })),
+    ...unmapped.map((key) => ({ label: labelForCost(key), keys: [key], avg: null })),
+  ]
+    .map((g) => {
+      const keys = g.keys.filter((key) => perLine[key]);
+      return { ...g, keys, cl: keys.reduce((s, key) => s + perLine[key], 0), eur: keys.reduce((s, key) => s + euro(key), 0) };
+    })
+    .filter((g) => g.cl || g.avg != null)
+    .sort((a, b) => b.cl - a.cl);
+  const max = Math.max(...groups.map((g) => Math.max(g.cl, g.avg ?? 0)));
+  const total = vsAverage(k.per_litre_c.costs, bench.total_c);
+  const cells = (cl, eurValue, avg, cmp, strong) => (
+    <>
+      {c && <td className="py-1 text-right">{eur(eurValue)}</td>}
+      <td className="py-1 text-right">{cl.toFixed(1)}</td>
+      <td className="py-1 text-right text-stone-500">{avg == null ? "—" : avg.toFixed(1)}</td>
+      <td className={`py-1 pl-3 text-right whitespace-nowrap ${cmp?.tone ?? ""} ${strong ? "" : "font-medium"}`}>{cmp?.text ?? ""}</td>
+    </>
+  );
+  return (
+    <Section
+      title="Where the costs go"
+      note={`${period(k)} · cent per litre of milk sold, next to the average Irish dairy farm (${bench.year})`}
+    >
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[36rem] text-sm tabular-nums">
+          <thead className="text-left text-xs text-stone-500">
+            <tr>
+              <th className="py-1 font-medium">Cost</th>
+              {c && <th className="py-1 text-right font-medium">€ total</th>}
+              <th className="py-1 pl-3 text-right font-medium">Your c/L</th>
+              <th className="py-1 pl-3 text-right font-medium">Irish avg</th>
+              <th className="py-1 pl-3 text-right font-medium">You vs average</th>
+              <th className="w-1/4 py-1 pl-4 font-medium" />
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map((g) => {
+              const cmp = vsAverage(g.cl, g.avg);
+              return [
+                <tr key={g.label} className="border-t border-stone-100 text-stone-800">
+                  <td className="py-1 font-medium">{g.label}</td>
+                  {cells(g.cl, g.eur, g.avg, cmp)}
+                  <td className="py-1 pl-4">
+                    <div className="relative h-2">
+                      <div className={`h-2 rounded-full ${cmp?.bar ?? "bg-stone-400"}`} style={{ width: `${(g.cl / max) * 100}%` }} />
+                      {g.avg != null && (
+                        <div className="absolute -top-1 h-4 w-0.5 bg-stone-800" style={{ left: `${(g.avg / max) * 100}%` }} title={`Irish average ${g.avg.toFixed(1)}c`} />
+                      )}
+                    </div>
+                  </td>
+                </tr>,
+                ...(g.keys.length > 1
+                  ? g.keys.map((key) => (
+                      <tr key={key} className="text-xs text-stone-500">
+                        <td className="py-0.5 pl-4">{labelForCost(key)}</td>
+                        {c && <td className="py-0.5 text-right">{eur(euro(key))}</td>}
+                        <td className="py-0.5 text-right">{perLine[key].toFixed(1)}</td>
+                        <td colSpan={3} />
+                      </tr>
+                    ))
+                  : []),
+              ];
+            })}
+            <tr className="border-t border-stone-300 font-semibold">
+              <td className="py-1">Total costs</td>
+              {cells(k.per_litre_c.costs, c?.costs.total.actual, bench.total_c, total, true)}
+              <td />
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-xs text-stone-500">
+        The black mark on each bar is the Irish average. Within 10% of it counts as about the same. Average: {bench.source}. Its total
+        leaves out depreciation, as ours does. It counts paid labour only: the survey doesn’t cost family labour, so a farm that pays
+        its labour will look higher.
+      </p>
+    </Section>
+  );
+}
+
 /** Bank cash: actual period and the projection rolled on from its close. */
 export function Cash({ cash }) {
   const { actual: a, projection: p } = cash;
