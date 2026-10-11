@@ -258,6 +258,9 @@ export function Comparison({ c }) {
   );
 }
 
+/** Engine floors break-even at 0 (covered even at a zero price); null = milk price doesn't move it. */
+const breakEven = (c) => (c == null ? "—" : c === 0 ? "any price" : num(c, 1, "c"));
+
 /** risk.sensitivity scenarios. */
 export function Sensitivity({ s }) {
   const from = s.shocks_from ? `${monthLabel(s.shocks_from.month)} ${s.shocks_from.year}` : null;
@@ -272,7 +275,7 @@ export function Sensitivity({ s }) {
               <th className="py-1 text-right font-medium">Closing cash</th>
               <th className="py-1 text-right font-medium">Lowest cash</th>
               <th className="py-1 text-right font-medium">Loan cover, full year</th>
-              <th className="py-1 text-right font-medium">Break-even (loss / overdraft)</th>
+              <th className="py-1 text-right font-medium">Lowest milk price before a loss / overdraft</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
@@ -286,14 +289,17 @@ export function Sensitivity({ s }) {
                 </td>
                 <td className="py-1 text-right">{num(sc.dscr, 2, "×")}</td>
                 <td className="py-1 text-right">
-                  {num(sc.break_even.surplus_milk_price_c, 1, "c")} / {num(sc.break_even.cash_milk_price_c, 1, "c")}
+                  {breakEven(sc.break_even.surplus_milk_price_c)} / {breakEven(sc.break_even.cash_milk_price_c)}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-xs text-stone-500">Average milk price used: {num(s.milk_price_c, 1, "c/L")}.</p>
+      <p className="mt-2 text-xs text-stone-500">
+        Average milk price used: {num(s.milk_price_c, 1, "c/L")}. The lowest price applies to the months still to come
+        {from ? ` (from ${from})` : ""}; “any price” means the farm stays covered even if milk paid nothing.
+      </p>
     </Section>
   );
 }
