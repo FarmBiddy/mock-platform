@@ -27,8 +27,7 @@ export default function AutoSaveForm({ action, className, children }) {
               : v.stepMismatch
                 ? "has too many decimals"
                 : "doesn’t look right";
-      const label = el.closest("label")?.firstElementChild?.firstChild?.textContent?.trim();
-      setProblem(`${label ?? "This number"} ${why}`);
+      setProblem(`${el.dataset.label ?? "This number"} ${why}`);
       return setStatus("invalid");
     }
     const data = new FormData();
