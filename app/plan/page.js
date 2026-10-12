@@ -1,4 +1,6 @@
 import Link from "next/link";
+import EmptyState from "@/components/EmptyState";
+import { hasRecords } from "@/lib/farm-fields";
 import { Badge, Card } from "@/components/ui";
 import { Stat } from "@/components/financials/PlatformCards";
 import NextYearTable from "@/components/plan/NextYearTable";
@@ -31,6 +33,17 @@ const ym = (p) => `${monthLabel(p.month)} ${String(p.year).slice(2)}`;
 export default async function PlanPage({ searchParams }) {
   const sp = await searchParams;
   const farm = await loadFarm();
+  if (!hasRecords(farm)) return <EmptyState title="Five-year plan" what="Where cash, debt and net worth could go over the next five years." />;
+  // The plan starts from the last 12 months: a farmer who joined this year has fewer.
+  if ((farm.prior_year ?? []).filter((m) => m.month > farm.actual_through_month).length + farm.months.length < 12)
+    return (
+      <EmptyState
+        title="Five-year plan"
+        headline="Needs a full year of figures"
+        what="The plan starts from your last 12 months, and so far there are figures for this year only."
+        next="It opens once last year’s figures are in."
+      />
+    );
   const { pro, role } = await getViewer();
   const presets = farm.plan_presets ?? {};
   const presetKeys = Object.keys(presets).filter((k) => !k.startsWith("_"));
@@ -39,7 +52,9 @@ export default async function PlanPage({ searchParams }) {
   const edits = Object.keys(await readEdits(farm.profile.id));
   const editedKeys = presetKeys.filter((k) => edits.some((p) => p.startsWith(`plan_presets.${k}.`)));
   const preset = presets[presetKey];
-  const price = param(sp.price, 0.2, 1);
+  // Farmers type c/litre (price_c); links and shares carry €/litre (price).
+  const priceC = param(sp.price_c, 20, 100);
+  const price = priceC != null ? priceC / 100 : param(sp.price, 0.2, 1);
   const inflation = param(sp.infl, -5, 15);
   const rates = param(sp.rates, -3, 10); // pp vs today, variable loans only (ADR-0043)
   // Carried over from a What-if scenario ("If it lasts"): year-1 changes that then stay.
@@ -139,8 +154,8 @@ export default async function PlanPage({ searchParams }) {
             </fieldset>
             <div className="space-y-3 text-sm">
               <label className="block">
-                Milk price, all years <span className="text-xs text-stone-400">€/litre, blank = scenario</span>
-                <input name="price" type="number" step="0.005" min="0.2" max="1" defaultValue={price ?? ""} className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2" />
+                Milk price, all years <span className="text-xs text-stone-400">c/litre, blank = scenario</span>
+                <input name="price_c" type="number" step="0.1" min="20" max="100" defaultValue={price == null ? "" : +(price * 100).toFixed(1)} className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2" />
               </label>
               <label className="block">
                 Cost inflation <span className="text-xs text-stone-400">% a year, blank = scenario</span>

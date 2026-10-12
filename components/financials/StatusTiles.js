@@ -22,7 +22,7 @@ export default function StatusTiles({ pl, cf, loans, kpi, plc, farm }) {
   const asOf = monthLabel(farm.actual_through_month);
   const ytd = pl.status === "ok" ? pl.result.ytd : null;
   const cash = cf.status === "ok" ? cf.result : null;
-  const loan = loans.status === "ok" ? loans.result : null;
+  const loan = loans?.status === "ok" ? loans.result : null; // null response: the farm has no loans
   const dscr = kpi?.status === "ok" ? kpi.result.dscr : null;
   const vsSurplus = plc?.status === "ok" ? plc.result.profit.net : null;
 
@@ -67,7 +67,9 @@ export default function StatusTiles({ pl, cf, loans, kpi, plc, farm }) {
           value: `${formatCurrency(loan.total_monthly_payment, loan.currency)} / month`,
           detail: `Loan cover ${times(dscr)}: surplus vs repayments, Jan–${asOf} · lenders look for ${times(DSCR_OK)}`,
         }
-      : { question: "Can I pay my loans?", tone: "none", answer: "Needs your figures", detail: "See loans below" },
+      : !farm.loans?.length
+        ? { question: "Can I pay my loans?", tone: "good", answer: "No loans to pay", detail: "Got one? Add it in Farm data" }
+        : { question: "Can I pay my loans?", tone: "none", answer: "Needs your figures", detail: "See loans below" },
   ];
 
   return (

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import EmptyState from "@/components/EmptyState";
+import { hasRecords } from "@/lib/farm-fields";
 import StatusTiles from "@/components/financials/StatusTiles";
 import { loadFarm } from "@/lib/farm-edits";
 import { EventsCard } from "@/components/financials/PlatformCards";
@@ -15,6 +17,7 @@ export const metadata = { title: "Dashboard · FarmBiddy" };
 
 export default async function DashboardPage() {
   const farm = await loadFarm();
+  if (!hasRecords(farm)) return <EmptyState title="Dashboard" what="Your farm at a glance: profit, cash and loans." />;
   const viewer = await getViewer();
   const { role, pro } = viewer;
   const note = role === "advisor" ? ((await readNotes())[farm.profile.id] ?? "") : null;

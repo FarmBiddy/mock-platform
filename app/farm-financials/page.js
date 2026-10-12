@@ -1,4 +1,6 @@
 import { loadFarm } from "@/lib/farm-edits";
+import EmptyState from "@/components/EmptyState";
+import { hasRecords } from "@/lib/farm-fields";
 import { Badge, Card } from "@/components/ui";
 import EngineGate, { withProvided } from "@/components/financials/EngineGate";
 import CashflowChart from "@/components/financials/CashflowChart";
@@ -32,6 +34,7 @@ const SHOW_WHAT_IF = false;
 export default async function FarmFinancialsPage({ searchParams }) {
   const params = await searchParams;
   const farm = await loadFarm();
+  if (!hasRecords(farm)) return <EmptyState title="Farm Financials" what="Money in, money out and what’s left, month by month." />;
   const { pro, role } = await getViewer();
 
   const { inputs, loans, plf, kpi, cap, cff, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));

@@ -3,9 +3,11 @@ import Sidebar from "@/components/shell/Sidebar";
 import MobileNav from "@/components/shell/MobileNav";
 import Link from "next/link";
 import ViewAs from "@/components/shell/ViewAs";
+import Nudge from "@/components/shell/Nudge";
 import { getFarm } from "@/lib/financials/farm";
-import { readEdits } from "@/lib/farm-edits";
-import { OWNER_FARM, chatContext, getViewer } from "@/lib/session";
+import { loadFarm, readEdits } from "@/lib/farm-edits";
+import { hasRecords } from "@/lib/farm-fields";
+import { OWNER_FARM, OWNER_FARMS, chatContext, getViewer } from "@/lib/session";
 import { suggestionsFor } from "@/lib/biddy-suggestions";
 import "./globals.css";
 
@@ -19,7 +21,17 @@ export const metadata = {
 export default async function RootLayout({ children }) {
   const viewer = await getViewer();
   const { role, farmId, tier } = viewer;
-  const edited = farmId ? Object.keys(await readEdits(farmId)).length : 0;
+  const edits = farmId ? await readEdits(farmId) : {};
+  const edited = Object.keys(edits).length;
+  // A farmer who just signed up is pointed to Farm data until the basics are in.
+  const farm = role === "owner" && farmId ? await loadFarm(farmId) : null;
+  const nudge = !farm?.profile.starter
+    ? null
+    : !hasRecords(farm)
+      ? "Your farm has no figures yet."
+      : farm.opening_cash == null
+        ? "Add your bank balance to see your cash flow."
+        : null;
   const client = role === "advisor" && farmId ? getFarm(farmId).profile : null;
 
   return (
@@ -46,8 +58,16 @@ export default async function RootLayout({ children }) {
                 Edited data
               </Link>
             )}
-            <ViewAs key={`${role}-${farmId}-${tier}`} role={role} tier={tier} owner={getFarm(OWNER_FARM).profile} client={client} />
+            <ViewAs
+              key={`${role}-${farmId}-${tier}`}
+              role={role}
+              tier={tier}
+              owner={getFarm(role === "owner" ? farmId : OWNER_FARM).profile}
+              owners={OWNER_FARMS.map((id) => getFarm(id).profile)}
+              client={client}
+            />
           </header>
+          {nudge && <Nudge text={nudge} />}
           <main className="flex-1 pb-20 lg:pb-0">{children}</main>
         </div>
         <MobileNav advisor={role === "advisor"} />

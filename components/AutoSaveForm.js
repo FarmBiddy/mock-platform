@@ -8,11 +8,29 @@ import { useState, useTransition } from "react";
  */
 export default function AutoSaveForm({ action, className, children }) {
   const [status, setStatus] = useState("idle");
+  const [problem, setProblem] = useState("");
   const [pending, startTransition] = useTransition();
 
   function save(el) {
     if (!el.name || el.type === "hidden" || el.value === el.defaultValue) return;
-    if (!el.checkValidity()) return setStatus("invalid");
+    if (!el.checkValidity()) {
+      // why, in our words (the browser's own message follows the browser's language), named after the field
+      const v = el.validity;
+      const why = v.valueMissing
+        ? "needs a number"
+        : v.badInput
+          ? "isn’t a number"
+          : v.rangeUnderflow
+            ? `can’t be less than ${el.min}`
+            : v.rangeOverflow
+              ? `can’t be more than ${el.max}`
+              : v.stepMismatch
+                ? "has too many decimals"
+                : "doesn’t look right";
+      const label = el.closest("label")?.firstElementChild?.firstChild?.textContent?.trim();
+      setProblem(`${label ?? "This number"} ${why}`);
+      return setStatus("invalid");
+    }
     const data = new FormData();
     for (const hidden of el.form.querySelectorAll("input[type=hidden]")) data.append(hidden.name, hidden.value);
     data.append(el.name, el.value);
@@ -29,7 +47,7 @@ export default function AutoSaveForm({ action, className, children }) {
 
   const text = pending
     ? "Saving…"
-    : { idle: "Changes save as you go", saved: "Saved ✓ Every page is recalculated", invalid: "Check the highlighted number", error: "Couldn’t save. Try again" }[status];
+    : { idle: "Changes save as you go", saved: "Saved ✓ Every page is recalculated", invalid: problem, error: "Couldn’t save. Try again" }[status];
 
   return (
     <form

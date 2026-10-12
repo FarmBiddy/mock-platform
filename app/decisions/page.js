@@ -1,4 +1,6 @@
 import Link from "next/link";
+import EmptyState from "@/components/EmptyState";
+import { hasRecords } from "@/lib/farm-fields";
 import { Badge, Card } from "@/components/ui";
 import { Stat } from "@/components/financials/PlatformCards";
 import { investmentAppraisal, partialBudget } from "@/lib/financial-engine/client";
@@ -47,6 +49,7 @@ export default async function DecisionsPage({ searchParams }) {
   // and "Share with my advisor", who opens the same appraisal with every field.
   const simple = role === "owner";
   const farm = await loadFarm();
+  if (!hasRecords(farm)) return <EmptyState title="Decisions" what="Whether a change on the farm pays its way." />;
   const first = farm.profile.name.split(" ")[0];
 
   const planned = farm.plan_investments ?? [];

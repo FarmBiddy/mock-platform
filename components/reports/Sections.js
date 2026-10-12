@@ -216,6 +216,7 @@ export function BalanceSheet({ bs }) {
 
 /** loan.schedule with platform names (same order). */
 export function Loans({ loans, meta }) {
+  if (!loans) return <Section title="Loans">No loans on record.</Section>;
   return (
     <Section title="Loans" note="As at the report date">
       <Rows
@@ -527,6 +528,7 @@ export function ProfitAndLoss({ pl, p }) {
 
 /** assets.schedule: fixed asset note per asset (names from the platform register, same order). */
 export function FixedAssets({ fa, meta }) {
+  if (!fa) return <Section title="Fixed assets">No buildings or machinery on record.</Section>;
   const cols = ["opening_nbv", "additions", "depreciation", "closing_nbv"];
   const line = (label, n, strong) => (
     <tr key={label} className={strong ? "border-t border-stone-200 font-semibold" : "text-stone-700"}>

@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { applyEdits, cleanEdits, currentFarmId, editCookie, effectiveValue, ownerOf, readEdits, ruleFor, scaleForTarget } from "@/lib/farm-edits";
+import { applyEdits, canEdit, cleanEdits, currentFarmId, editCookie, effectiveValue, readEdits, ruleFor, scaleForTarget } from "@/lib/farm-edits";
 import { forecastMilkPrice, getFarm } from "@/lib/financials/farm";
 import { getViewer } from "@/lib/session";
 
@@ -12,6 +12,7 @@ const OPTS = { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 
 const PERCENT = { "new_loan_terms.annual_rate_pct": "new_loan_terms.annual_rate" };
 
 const YEAR = "year."; // a year-so-far figure for a month field → one months_scale factor
+const CENTS = "c:"; // a milk price typed in cents per litre → stored in €/litre
 
 /**
  * Write the form's fields to the edit cookie. Only whitelisted fields; a value equal to the demo data drops the edit;
@@ -23,21 +24,33 @@ async function writeEdits(formData) {
   const { role } = await getViewer();
   const base = getFarm(farmId);
   const edits = await readEdits(farmId);
-  for (const [name, raw] of formData.entries()) {
+  for (let [name, raw] of formData.entries()) {
+    if (typeof raw !== "string") continue;
+    if (name.startsWith(CENTS)) {
+      name = name.slice(CENTS.length);
+      if (raw.trim() !== "" && Number.isFinite(Number(raw))) raw = String(+(Number(raw) / 100).toFixed(6)); // unit only
+    }
     if (name.startsWith(YEAR)) {
       const field = name.slice(YEAR.length);
-      const target = Number(String(raw).trim());
+      const target = Number(raw.trim());
       const path = `months_scale.${field}`;
-      if (!ruleFor(path) || ownerOf(path) !== role || String(raw).trim() === "" || !Number.isFinite(target) || target < 0) continue;
+      if (!ruleFor(path) || !canEdit(role, farmId, path) || raw.trim() === "" || !Number.isFinite(target) || target < 0) continue;
       const factor = scaleForTarget(base, edits, field, target);
-      if (factor == null) continue;
-      if (Math.abs(factor - 1) < 1e-6) delete edits[path];
-      else edits[path] = +factor.toFixed(6);
+      if (factor == null) {
+        // Nothing of the farm's own to scale (a new farmer, or a payment not made yet): keep the total itself,
+        // spread in a typical seasonal pattern.
+        delete edits[path];
+        edits[`months_total.${field}`] = target;
+      } else {
+        delete edits[`months_total.${field}`];
+        if (Math.abs(factor - 1) < 1e-6) delete edits[path];
+        else edits[path] = +factor.toFixed(6);
+      }
       continue;
     }
     const path = PERCENT[name] ?? name;
     const rule = ruleFor(path);
-    if (!rule || ownerOf(path) !== role || typeof raw !== "string") continue;
+    if (!rule || !canEdit(role, farmId, path)) continue;
     const text = raw.trim();
     let value = text === "" ? null : Number(text);
     if (value !== null && !Number.isFinite(value)) continue;
@@ -79,7 +92,7 @@ export async function saveFarmData(formData) {
 export async function resetFarmData() {
   const farmId = await currentFarmId();
   const { role } = await getViewer();
-  const kept = Object.fromEntries(Object.entries(await readEdits(farmId)).filter(([path]) => ownerOf(path) !== role));
+  const kept = Object.fromEntries(Object.entries(await readEdits(farmId)).filter(([path]) => !canEdit(role, farmId, path)));
   (await cookies()).set(editCookie(farmId), JSON.stringify(kept), OPTS);
   redirect(`/farm-data?reset=${Date.now()}`); // a new value each time, so the form remounts with the demo figures
 }
