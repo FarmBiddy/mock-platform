@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui";
 import AutoSaveForm from "@/components/AutoSaveForm";
 import { canEdit, loadFarm, readEdits, yearValue } from "@/lib/farm-edits";
-import { CENTS, CHEQUE, FIELD_GROUPS, hasRecords, ownFigure } from "@/lib/farm-fields";
+import { CENTS, CHEQUE, FIELD_GROUPS, NEEDED, hasRecords, ownFigure } from "@/lib/farm-fields";
 import { ADVISOR, getViewer } from "@/lib/session";
 import { forecastMilkPrice } from "@/lib/financials/farm";
 import { monthLabel } from "@/lib/format/date";
@@ -19,14 +19,25 @@ const chip = (tone, text) => <span className={`rounded-full px-1.5 text-[10px] f
  * `cents`: typed in c/litre, saved in €/litre (the "c:" name prefix).
  */
 function Field({ name, label, unit, step = "1", value, edited, hint, optional, min = "0", locked, cents }) {
+  // the farm-file path behind the input name ("c:year.pl.milk_price" → "pl.milk_price"), to see if the engine needs it
+  const needed = NEEDED[name.replace(/^c:/, "").replace(/^(year|months\.\d+)\./, "").replace(/_pct$/, "")];
   return (
     <label className="block text-sm">
       <span className="flex flex-wrap items-center gap-x-2 text-stone-700">
-        {label} <span className="text-xs text-stone-400">{unit}</span>
+        <span>
+          {label}
+          {needed && (
+            <span className="ml-0.5 font-semibold text-red-600" title={`Needed for ${needed}`}>
+              *<span className="sr-only"> (needed for {needed})</span>
+            </span>
+          )}
+        </span>{" "}
+        <span className="text-xs text-stone-400">{unit}</span>
         {edited && chip("bg-amber-100 text-amber-800", "edited")}
       </span>
       <input
         name={cents ? `c:${name}` : name}
+        data-label={label}
         type="number"
         step={cents ? "0.01" : step}
         min={min}
@@ -108,6 +119,9 @@ export default async function FarmDataPage({ searchParams }) {
           <h1 className="text-2xl font-semibold tracking-tight">Farm data</h1>
           <p className="text-sm text-stone-500">
             The numbers FarmBiddy holds for {farm.profile.farm_name}. Every change is recalculated on every page, report and Biddy answer.
+          </p>
+          <p className="mt-1 text-sm text-stone-600">
+            <span className="font-semibold text-red-600">*</span> Needed before FarmBiddy can work out your figures. Everything else can wait.
           </p>
         </div>
         {ownEdits > 0 && (
