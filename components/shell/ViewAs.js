@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { openClient, resetDemo, setTier, viewAs } from "@/app/session-actions";
 import ResetDemoButton from "./ResetDemoButton";
-import { ADVISOR } from "@/lib/session";
+import { ADVISOR, ADVISOR_LOGIN } from "@/lib/session";
 
 /**
  * Header identity + mock login switch ("View as" owner or advisor). Native <details>, no client JS.
@@ -46,7 +46,7 @@ export default function ViewAs({ role, owner, owners, client, tier }) {
           <form action={viewAs}>
             <p className="px-3 pt-1 pb-2 text-[11px] font-semibold uppercase tracking-wider text-stone-400">View as (demo)</p>
             {owners.map((o) => option(o.id, `${o.name} · farm owner`, o.starter ? `${o.farm_name} · new, just signed up` : `${o.farm_name} · a year of records`))}
-            {option("advisor", `${ADVISOR.name} · advisor`, `${ADVISOR.org} · ${ADVISOR.clients.length} clients`)}
+            {ADVISOR_LOGIN && option("advisor", `${ADVISOR.name} · advisor`, `${ADVISOR.org} · ${ADVISOR.clients.length} clients`)}
           </form>
           {role === "owner" && (
             <form action={setTier} className="mt-1 border-t border-stone-100 px-3 pt-2">
