@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { planTaxProfile } from "@/lib/financials/tax";
 import EmptyState from "@/components/EmptyState";
 import { hasRecords } from "@/lib/farm-fields";
 import { Badge, Card } from "@/components/ui";
@@ -63,8 +64,11 @@ export default async function PlanPage({ searchParams }) {
   const invIds = [].concat(sp.inv ?? []);
   const investments = (farm.plan_investments ?? []).filter((i) => invIds.includes(i.id));
 
+  // Tax per year from the farmer's tax answers when given (engine ADR-0053); else the preset's flat tax figure.
+  const taxProfile = planTaxProfile(farm);
+  const { tax: presetTax, ...presetAssumptions } = preset.assumptions;
   const assumptions = {
-    ...preset.assumptions,
+    ...(taxProfile ? presetAssumptions : preset.assumptions),
     ...(price == null ? {} : { milk_price: [price] }),
     ...(inflation == null ? {} : { cost_inflation_pct: Array(YEARS).fill(inflation) }),
     ...(rates == null ? {} : { interest_rate_shift_pp: [rates] }),
@@ -80,6 +84,7 @@ export default async function PlanPage({ searchParams }) {
             assumptions,
             years: YEARS,
             investments: investments.map(({ id, name, note, ...inv }) => inv),
+            taxProfile,
           }),
         )
       : { status: "error", error: { message: "This year's cash flow couldn't be calculated, so there's no starting balance." } };
@@ -285,7 +290,13 @@ export default async function PlanPage({ searchParams }) {
                         ["Operating Surplus", (y) => formatCurrency(y.pl.operating_surplus), "strong"],
                         ["Net profit before tax", (y) => formatCurrency(y.pl.net_profit_before_tax)],
                         ["Cost of production", (y) => `${fmt(y.kpis.costs_per_litre_c)}c/L`],
-                        ["Drawings + tax", (y) => `${formatCurrency(y.cash.drawings)} + ${formatCurrency(y.cash.tax)}`],
+                        ...(taxProfile
+                          ? [
+                              ["Tax", (y) => formatCurrency(y.tax?.total_tax ?? y.cash.tax)],
+                              ["Tax rules", (y) => (y.tax?.rules_basis === "latest_held_constant" ? `at ${y.tax.tax_year > 2027 ? "2027" : y.tax.tax_year} rates` : `${y.tax?.tax_year ?? ""} rates`), "assumption"],
+                              ["Drawings", (y) => formatCurrency(y.cash.drawings)],
+                            ]
+                          : [["Drawings + tax", (y) => `${formatCurrency(y.cash.drawings)} + ${formatCurrency(y.cash.tax)}`]]),
                         ["Investment spend", (y) => (y.cash.capex ? formatCurrency(y.cash.capex) : "—")],
                         ["Cash at year end", (y) => formatCurrency(y.cash.closing), "strong", (y) => y.flags.negative_cash],
                         ["Debt at year end", (y) => formatCurrency(y.debt.closing_balance)],
@@ -306,6 +317,9 @@ export default async function PlanPage({ searchParams }) {
                   </table>
                 </div>
                 <p className="mt-3 text-xs text-stone-500">
+                  {taxProfile
+                    ? `Tax is worked out for each year from your tax details${taxProfile.income_averaging ? ", with income averaging" : ""}${plan.years.some((y) => y.tax?.averaging === "insufficient_history") ? " (not enough history to average yet)" : ""}; later years use the latest announced rates. `
+                    : <>Tax is a flat {formatCurrency(presetTax?.[0] ?? 0)} a year from the scenario. <Link href="/farm-data" className="underline">Answer the tax questions</Link> to have it worked out each year. </>}
                   Grey rows are the assumptions used. Year-end figures hide seasonal dips: the spring overdraft can still happen inside a year
                   — see the{" "}
                   <Link href="/farm-financials" className="underline">

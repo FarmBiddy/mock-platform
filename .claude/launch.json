@@ -7,6 +7,12 @@
       "runtimeExecutable": "py",
       "runtimeArgs": ["-m", "uvicorn", "--app-dir", "../engine-main", "api.app:app", "--host", "127.0.0.1", "--port", "8000"],
       "port": 8000
+    },
+    {
+      "name": "engine-tax",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-m", "uvicorn", "--app-dir", "../engine-ie-tax", "api.app:app", "--host", "127.0.0.1", "--port", "8000"],
+      "port": 8000
     }
   ]
 }
