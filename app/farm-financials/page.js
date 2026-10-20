@@ -117,6 +117,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
           year={farm.year}
           accountantTax={farm.household?.tax_per_year ?? null}
           lastYear={farm.tax?.last_year && { year: farm.tax.last_year, tax: farm.tax.last_year_tax, taxable: farm.tax.last_year_taxable_profit }}
+          yearEndGiven={farm.tax?.year_end_livestock != null || farm.tax?.year_end_stock != null}
         />
       ) : (
         taxQuestionsLeft(farm.tax).length > 0 && <TaxQuestions year={farm.year} left={taxQuestionsLeft(farm.tax)} />

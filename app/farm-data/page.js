@@ -358,6 +358,26 @@ export default async function FarmDataPage({ searchParams }) {
               hint="Spreads profit over 3 years. Your accounts or accountant will say"
             />
             <Field
+              name="tax.year_end_livestock"
+              label={`Herd value you expect at 31 Dec ${farm.year}`}
+              unit="€"
+              value={farm.tax?.year_end_livestock}
+              optional
+              edited={"tax.year_end_livestock" in edits}
+              locked={lock("tax.year_end_livestock")}
+              hint={farm.balance_sheet?.livestock != null ? `Leave empty to use your latest value (€${farm.balance_sheet.livestock.toLocaleString("en-IE")})` : "For stock relief"}
+            />
+            <Field
+              name="tax.year_end_stock"
+              label={`Feed, fertiliser and fuel in stock at 31 Dec ${farm.year}`}
+              unit="€"
+              value={farm.tax?.year_end_stock}
+              optional
+              edited={"tax.year_end_stock" in edits}
+              locked={lock("tax.year_end_stock")}
+              hint={farm.balance_sheet?.stock != null ? `Leave empty to use your latest value (€${farm.balance_sheet.stock.toLocaleString("en-IE")})` : "For stock relief"}
+            />
+            <Field
               name="household.tax_per_year"
               label="Tax figure from your accountant"
               unit="€ a year"
