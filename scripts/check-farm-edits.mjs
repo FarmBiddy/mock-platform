@@ -112,4 +112,11 @@ assert.equal(yearValue(milk, "pl.milk_litres"), 30000);
 assert.equal(milk.months[1].cash.milk, milk.months[0].pl.milk_litres * 0.5, "cheque = last month's litres × price");
 assert.equal(milk.months[0].cash.milk, 0, "no December before January");
 
+// tax profile: picks from a list stay text, anything else is dropped; the accountant's figure may be cleared
+assert.deepEqual(
+  cleanEdits({ "tax.business_type": "company", "tax.vat": "maybe", "tax.marital_status": 1, "household.tax_per_year": null, "tax.spouse_paye_income": 30000 }),
+  { "tax.business_type": "company", "household.tax_per_year": null, "tax.spouse_paye_income": 30000 },
+);
+assert.equal(applyEdits({ tax: { business_type: "sole_trader" } }, { "tax.business_type": "company" }).tax.business_type, "company");
+
 console.log("farm edits ok");

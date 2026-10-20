@@ -1,4 +1,6 @@
 import { loadFarm } from "@/lib/farm-edits";
+import TaxCard, { TaxQuestions } from "@/components/financials/TaxCard";
+import { householdTax, taxQuestionsLeft } from "@/lib/financials/tax";
 import EmptyState from "@/components/EmptyState";
 import { hasRecords } from "@/lib/farm-fields";
 import { Badge, Card } from "@/components/ui";
@@ -37,7 +39,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
   if (!hasRecords(farm)) return <EmptyState title="Farm Financials" what="Money in, money out and what’s left, month by month." />;
   const { pro, role } = await getViewer();
 
-  const { inputs, loans, plf, kpi, cap, cff, cf } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
+  const { inputs, loans, plf, kpi, cap, cff, cf, tax } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
   // Money in / out so far and where it came from / went: this year's actual months vs the same months last year.
   const cfc = farm.prior_year?.length ? await cfCompare(buildCfCompareInput(farm)) : null;
 
@@ -52,7 +54,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
   const forecastIssue = [plf, cff].find((r) => r && r.status !== "ok");
   // New loan: sized on what actually happened (last 12 months and last year), never the forecast; the
   // lower of the two is the answer, the other is shown for context. Without a year of records: the year incl. forecast.
-  const historic = await Promise.all(buildHistoricDebtCapacityInputs(farm).map(async ({ key, input }) => ({ key, response: await debtCapacity(input) })));
+  const historic = await Promise.all(buildHistoricDebtCapacityInputs(farm, householdTax(farm, tax)).map(async ({ key, input }) => ({ key, response: await debtCapacity(input) })));
   const sized = historic.filter((h) => h.response.status === "ok");
   const prudent = sized.reduce((a, b) => (!a || b.response.result.new_loan.max_principal < a.response.result.new_loan.max_principal ? b : a), null);
   const otherPeriod = sized.find((h) => h !== prudent)?.response.result ?? null;
@@ -104,6 +106,17 @@ export default async function FarmFinancialsPage({ searchParams }) {
       <MoneyBreakdown cfc={cfc} farm={farm} />
 
       {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} milkBenchmarks={milkBenchmarks} milkLatest={milkLatest} milkYear={milkYear} />}
+
+      {tax ? (
+        <TaxCard
+          tax={tax}
+          year={farm.year}
+          accountantTax={farm.household?.tax_per_year ?? null}
+          lastYear={farm.tax?.last_year && { year: farm.tax.last_year, tax: farm.tax.last_year_tax, taxable: farm.tax.last_year_taxable_profit }}
+        />
+      ) : (
+        taxQuestionsLeft(farm.tax).length > 0 && <TaxQuestions year={farm.year} left={taxQuestionsLeft(farm.tax)} />
+      )}
 
       {risk && (
         <WhatIfCard

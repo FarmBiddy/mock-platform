@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card } from "@/components/ui";
 import AutoSaveForm from "@/components/AutoSaveForm";
+import AccountsUpload from "@/components/AccountsUpload";
 import { canEdit, loadFarm, readEdits, yearValue } from "@/lib/farm-edits";
 import { CENTS, CHEQUE, FIELD_GROUPS, NEEDED, hasRecords, ownFigure } from "@/lib/farm-fields";
 import { ADVISOR, getViewer } from "@/lib/session";
@@ -46,6 +47,35 @@ function Field({ name, label, unit, step = "1", value, edited, hint, optional, m
         defaultValue={value ?? ""}
         className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 tabular-nums invalid:border-red-400 disabled:bg-stone-100 disabled:text-stone-500"
       />
+      {(locked || hint) && <span className="mt-0.5 block text-xs text-stone-500">{locked ? `🔒 ${locked}` : hint}</span>}
+    </label>
+  );
+}
+
+/** A pick from a short list (tax profile), saved as it changes. */
+function Choice({ name, label, value, options, edited, locked, hint }) {
+  return (
+    <label className="block text-sm">
+      <span className="flex flex-wrap items-center gap-x-2 text-stone-700">
+        {label}
+        {edited && chip("bg-amber-100 text-amber-800", "edited")}
+      </span>
+      <select
+        key={value ?? "none"} // a new stored value redraws it, or the browser keeps showing the old pick
+        name={name}
+        data-label={label}
+        data-saved={value ?? ""}
+        defaultValue={value ?? ""}
+        disabled={!!locked}
+        className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 disabled:bg-stone-100"
+      >
+        {value == null && <option value="">Choose…</option>}
+        {options.map(([v, text]) => (
+          <option key={v} value={v}>
+            {text}
+          </option>
+        ))}
+      </select>
       {(locked || hint) && <span className="mt-0.5 block text-xs text-stone-500">{locked ? `🔒 ${locked}` : hint}</span>}
     </label>
   );
@@ -160,8 +190,10 @@ export default async function FarmDataPage({ searchParams }) {
         </p>
       )}
 
+      {role === "owner" && <AccountsUpload key={`${farm.tax?.last_year ?? "none"}:${reset ?? ""}`} imported={farm.tax?.last_year} />}
+
       {/* key: remount on a new view, month or reset so the uncontrolled inputs show the stored values */}
-      <AutoSaveForm key={`${byMonth ? month : "year"}:${reset ?? ""}`} action={autosaveFarmData} className="space-y-6">
+      <AutoSaveForm key={`${byMonth ? month : "year"}:${reset ?? ""}:${farm.tax?.last_year ?? ""}`} action={autosaveFarmData} className="space-y-6">
         <input type="hidden" name="_month" value={month} />
 
         <Card title="Farm" subtitle="Leave a field empty if you don’t know it: Biddy will ask for it.">
@@ -265,6 +297,68 @@ export default async function FarmDataPage({ searchParams }) {
               ? "A month you change here stays as you typed it, even if you change the year total later."
               : "One figure for the year is enough. Change a total and we spread it over the months the way your figures already run (more feed in winter, more fertiliser in spring). Know a month exactly? Use Month by month."}
           </p>
+        </Card>
+
+        <Card title="Tax" subtitle="For your tax estimate on Farm Financials. A figure from your accountant always wins.">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Choice
+              name="tax.business_type"
+              label="How the farm is set up"
+              value={farm.tax?.business_type}
+              options={[["sole_trader", "Sole trader (just me)"], ["company", "Limited company"]]}
+              edited={"tax.business_type" in edits}
+              locked={lock("tax.business_type")}
+              hint="Partnerships come later"
+            />
+            <Choice
+              name="tax.marital_status"
+              label="Married or civil partners?"
+              value={farm.tax?.marital_status}
+              options={[["single", "No"], ["married", "Yes"]]}
+              edited={"tax.marital_status" in edits}
+              locked={lock("tax.marital_status")}
+            />
+            <Field
+              name="tax.spouse_paye_income"
+              label="Your spouse’s wages"
+              unit="€ a year"
+              value={farm.tax?.spouse_paye_income}
+              optional
+              edited={"tax.spouse_paye_income" in edits}
+              locked={lock("tax.spouse_paye_income")}
+              hint="Only if married: wages from a job off the farm, before tax. Enter 0 if none"
+            />
+            <Choice
+              name="tax.vat"
+              label="VAT"
+              value={farm.tax?.vat}
+              options={[["flat_rate", "Not registered (flat-rate farmer)"], ["registered", "Registered for VAT"]]}
+              edited={"tax.vat" in edits}
+              locked={lock("tax.vat")}
+              hint="Most dairy farmers aren’t registered"
+            />
+            <Field
+              name="tax.young_trained_farmer_first_year"
+              label="Young trained farmer relief: first year"
+              unit="year"
+              min="2000"
+              value={farm.tax?.young_trained_farmer_first_year}
+              optional
+              edited={"tax.young_trained_farmer_first_year" in edits}
+              locked={lock("tax.young_trained_farmer_first_year")}
+              hint="Leave empty if you don’t have it"
+            />
+            <Field
+              name="household.tax_per_year"
+              label="Tax figure from your accountant"
+              unit="€ a year"
+              value={farm.household?.tax_per_year}
+              optional
+              edited={"household.tax_per_year" in edits}
+              locked={lock("household.tax_per_year")}
+              hint="Leave empty to use our estimate"
+            />
+          </div>
         </Card>
 
         {role === "owner" ? (

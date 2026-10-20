@@ -12,7 +12,9 @@ export default function AutoSaveForm({ action, className, children }) {
   const [pending, startTransition] = useTransition();
 
   function save(el) {
-    if (!el.name || el.type === "hidden" || el.value === el.defaultValue) return;
+    // a <select> has no defaultValue: its last saved choice is kept in data-saved
+    const select = el.tagName === "SELECT";
+    if (!el.name || el.type === "hidden" || el.value === (select ? el.dataset.saved : el.defaultValue)) return;
     if (!el.checkValidity()) {
       // why, in our words (the browser's own message follows the browser's language), named after the field
       const v = el.validity;
@@ -33,10 +35,11 @@ export default function AutoSaveForm({ action, className, children }) {
     const data = new FormData();
     for (const hidden of el.form.querySelectorAll("input[type=hidden]")) data.append(hidden.name, hidden.value);
     data.append(el.name, el.value);
+    if (select) el.dataset.saved = el.value; // before the save, so its blur doesn't send it again
     startTransition(async () => {
       try {
         await action(data);
-        el.defaultValue = el.value; // now the saved value
+        if (!select) el.defaultValue = el.value; // now the saved value
         setStatus("saved");
       } catch {
         setStatus("error");
@@ -53,6 +56,7 @@ export default function AutoSaveForm({ action, className, children }) {
       className={className}
       onSubmit={(e) => e.preventDefault()}
       onBlur={(e) => save(e.target)}
+      onChange={(e) => e.target.tagName === "SELECT" && save(e.target)}
       onKeyDown={(e) => e.key === "Enter" && e.target.tagName === "INPUT" && (e.preventDefault(), save(e.target))}
     >
       {children}
