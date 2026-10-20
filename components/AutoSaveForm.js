@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { whyInvalid } from "@/lib/validation";
 
 /**
  * A form that saves each field when the farmer leaves it (or presses Enter): only that field is sent,
@@ -16,20 +17,7 @@ export default function AutoSaveForm({ action, className, children }) {
     const select = el.tagName === "SELECT";
     if (!el.name || el.type === "hidden" || el.value === (select ? el.dataset.saved : el.defaultValue)) return;
     if (!el.checkValidity()) {
-      // why, in our words (the browser's own message follows the browser's language), named after the field
-      const v = el.validity;
-      const why = v.valueMissing
-        ? "needs a number"
-        : v.badInput
-          ? "isn’t a number"
-          : v.rangeUnderflow
-            ? `can’t be less than ${el.min}`
-            : v.rangeOverflow
-              ? `can’t be more than ${el.max}`
-              : v.stepMismatch
-                ? "has too many decimals"
-                : "doesn’t look right";
-      setProblem(`${el.dataset.label ?? "This number"} ${why}`);
+      setProblem(`${el.dataset.label ?? "This number"} ${whyInvalid(el)}`); // our words, named after the field
       return setStatus("invalid");
     }
     const data = new FormData();
