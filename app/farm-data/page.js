@@ -348,6 +348,15 @@ export default async function FarmDataPage({ searchParams }) {
               locked={lock("tax.young_trained_farmer_first_year")}
               hint="Leave empty if you don’t have it"
             />
+            <Choice
+              name="tax.income_averaging"
+              label="Income averaging"
+              value={farm.tax?.income_averaging}
+              options={[["not_elected", "Not elected"], ["elected", "Elected"]]}
+              edited={"tax.income_averaging" in edits}
+              locked={lock("tax.income_averaging")}
+              hint="Spreads profit over 3 years. Your accounts or accountant will say"
+            />
             <Field
               name="household.tax_per_year"
               label="Tax figure from your accountant"

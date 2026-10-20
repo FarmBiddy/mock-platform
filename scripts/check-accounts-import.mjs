@@ -21,6 +21,7 @@ assert.equal(edits["tax.grant.parlour"], 54000, "grant matched though the PDF sa
 assert.equal(edits["tax.allowance.feeder"], "plant");
 assert.equal(edits["tax.last_year_tax"], 28392);
 assert.equal(edits["tax.prior_profit.2022"], 61240);
+assert.equal(edits["tax.income_averaging"], "not_elected", "read, not assumed");
 // a year the farm isn't starting from: its closing balances are not this year's opening
 assert.equal(readAccounts(text, { ...joe, year: 2028 }).edits.opening_cash, undefined);
 // not accounts at all
