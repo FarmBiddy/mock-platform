@@ -1,4 +1,5 @@
 import { loadFarm } from "@/lib/farm-edits";
+import { vatFlatRate } from "@/lib/financial-engine/client";
 import TaxCard, { TaxQuestions } from "@/components/financials/TaxCard";
 import { householdTax, taxQuestionsLeft } from "@/lib/financials/tax";
 import EmptyState from "@/components/EmptyState";
@@ -42,6 +43,9 @@ export default async function FarmFinancialsPage({ searchParams }) {
   const { inputs, loans, plf, kpi, cap, cff, cf, tax } = await runFarm(farm, (fn, input) => withProvided(fn, params, input));
   // Money in / out so far and where it came from / went: this year's actual months vs the same months last year.
   const cfc = farm.prior_year?.length ? await cfCompare(buildCfCompareInput(farm)) : null;
+  // Flat-rate VAT addition on this year's actual sales, only once the farmer has said they're a flat-rate farmer.
+  const actualMonths = inputs["pl.months"]?.months.filter((m) => m.year === farm.year && m.month <= farm.actual_through_month) ?? [];
+  const flatRate = farm.tax?.vat === "flat_rate" && actualMonths.length ? await vatFlatRate({ months: actualMonths, vat_registered: false }) : null;
 
   const asOf = monthLabel(farm.actual_through_month);
   // Say which month / loan a nested needs_input path points at, from the request that was sent.
@@ -103,7 +107,7 @@ export default async function FarmFinancialsPage({ searchParams }) {
         </EngineGate>
       </Card>
 
-      <MoneyBreakdown cfc={cfc} farm={farm} />
+      <MoneyBreakdown cfc={cfc} farm={farm} flatRate={flatRate?.status === "ok" ? flatRate.result : null} />
 
       {farm.profile.enterprise === "dairy" && <KpiCard response={kpi} params={params} describePath={describePath} milkBenchmarks={milkBenchmarks} milkLatest={milkLatest} milkYear={milkYear} />}
 

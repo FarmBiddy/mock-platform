@@ -28,7 +28,12 @@ function Rows({ rows, total, color }) {
 }
 
 /** "Where your money came from" and "Where your money went", so far this year (cf.compare, actual months). */
-export default function MoneyBreakdown({ cfc, farm }) {
+/**
+ * `flatRate`: vat.flat_rate on this year's actual months, for a farmer who isn't VAT-registered (engine ADR-0053).
+ * The co-op and mart pay it on top of the ex-VAT prices, and it's taxable income; the engine's cash flow has no line
+ * for it, so it's shown beside the total, not in it.
+ */
+export default function MoneyBreakdown({ cfc, farm, flatRate }) {
   if (cfc?.status !== "ok") return null;
   const r = cfc.result;
   const period = `Jan–${monthLabel(farm.actual_through_month)} ${farm.year}`;
@@ -36,6 +41,13 @@ export default function MoneyBreakdown({ cfc, farm }) {
     <div className="grid items-start gap-6 lg:grid-cols-2">
       <Card title="Where your money came from" subtitle={period} badge={<Badge>cf.compare</Badge>}>
         <Rows rows={moneyRows(r, "in")} total={r.cash_in.actual} color="#22a06b" />
+        {flatRate && (
+          <p className="mt-3 rounded-lg bg-stone-50 px-3 py-2 text-sm text-stone-700">
+            On top of that: <strong className="tabular-nums">{formatCurrency(flatRate.total.addition)}</strong> flat-rate VAT on your milk and cattle sales
+            {flatRate.rules_applied.length === 1 && ` (${flatRate.rules_applied[0].value}%)`}, paid with them. It isn’t in the total above, but it is
+            taxable income, so it’s in your tax estimate.
+          </p>
+        )}
       </Card>
       <Card title="Where your money went" subtitle={period} badge={<Badge>cf.compare</Badge>}>
         <Rows rows={moneyRows(r, "out")} total={r.cash_out.actual} color="#f28b82" />
