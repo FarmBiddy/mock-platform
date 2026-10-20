@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { applyAccounts, readAccountsFile } from "@/app/farm-data/actions";
 
 const SAMPLE = "/samples/Bloggs-Farm-Accounts-2025.pdf";
@@ -11,6 +11,7 @@ const SAMPLE = "/samples/Bloggs-Farm-Accounts-2025.pdf";
  */
 export default function AccountsUpload({ imported }) {
   const [read, readAction, reading] = useActionState(readAccountsFile, null);
+  const [chosen, setChosen] = useState("");
   const groups = read?.found ? Object.entries(Object.groupBy(read.found, (f) => f.group)) : [];
 
   return (
@@ -24,13 +25,14 @@ export default function AccountsUpload({ imported }) {
 
       {!read?.found && (
         <form action={readAction} className="mt-4 flex flex-wrap items-center gap-3">
-          <input
-            type="file"
-            name="file"
-            accept="application/pdf,.pdf"
-            required
-            className="text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-stone-100 file:px-3 file:py-2 file:text-sm file:font-medium hover:file:bg-stone-200"
-          />
+          {/* The browser's own file button speaks the browser's language: it's hidden behind an English one. */}
+          <label className="flex cursor-pointer items-center gap-3 text-sm">
+            <input type="file" name="file" accept="application/pdf,.pdf" className="peer sr-only" onChange={(e) => setChosen(e.target.files?.[0]?.name ?? "")} />
+            <span className="rounded-lg bg-stone-100 px-3 py-2 font-medium text-stone-800 hover:bg-stone-200 peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-700">
+              Choose PDF
+            </span>
+            <span className="text-stone-600">{chosen || "No file chosen"}</span>
+          </label>
           <button disabled={reading} className="rounded-lg bg-emerald-800 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-900 disabled:opacity-60">
             {reading ? "Reading…" : "Read my accounts"}
           </button>

@@ -4,6 +4,7 @@ import MobileNav from "@/components/shell/MobileNav";
 import Link from "next/link";
 import ViewAs from "@/components/shell/ViewAs";
 import Nudge from "@/components/shell/Nudge";
+import EnglishValidation from "@/components/shell/EnglishValidation";
 import { getFarm } from "@/lib/financials/farm";
 import { loadFarm, readEdits } from "@/lib/farm-edits";
 import { hasRecords } from "@/lib/farm-fields";
@@ -71,6 +72,7 @@ export default async function RootLayout({ children }) {
           <main className="flex-1 pb-20 lg:pb-0">{children}</main>
         </div>
         <MobileNav advisor={role === "advisor"} />
+        <EnglishValidation />
       </body>
     </html>
   );
